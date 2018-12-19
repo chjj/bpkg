@@ -1,0 +1,239 @@
+#!/usr/bin/env node
+
+/*!
+ * bpkg - minimal bundler for javascript
+ * Copyright (c) 2018, Christopher Jeffrey (MIT License).
+ * https://github.com/chjj/bpkg
+ */
+
+'use strict';
+
+const assert = require('assert');
+const fs = require('fs');
+const os = require('os');
+const {relative, resolve} = require('path');
+const {Bundler} = require('../');
+
+const cwd = process.cwd();
+const {argv, stdout, stderr, exit} = process;
+
+/*
+ * Constants
+ */
+
+const VERSION = '0.0.0';
+
+const HELP = `
+  Usage: bpkg [options] [file]
+
+  Options:
+
+    -v, --version           output the version number
+    -h, --help              output usage information
+`;
+
+/*
+ * Helpers
+ */
+
+function exists(file) {
+  try {
+    return fs.statSync(file);
+  } catch (e) {
+    if (e.code === 'ENOENT')
+      return false;
+    throw e;
+  }
+}
+
+function getArgs(argv) {
+  assert(Array.isArray(argv));
+
+  const args = [];
+
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+
+    assert(typeof arg === 'string');
+
+    if (arg.startsWith('--')) {
+      // e.g. --opt
+      const index = arg.indexOf('=');
+      if (index !== -1) {
+        // e.g. --opt=val
+        args.push(arg.substring(0, index));
+        args.push(arg.substring(index + 1));
+      } else {
+        args.push(arg);
+      }
+    } else if (arg.startsWith('-')) {
+      if (arg.length > 2) {
+        // e.g. -abc
+        for (let j = 1; j < arg.length; j++)
+          args.push(`-${arg.charAt(j)}`);
+      } else {
+        // e.g. -a
+        args.push(arg);
+      }
+    } else {
+      // e.g. foo
+      args.push(arg);
+    }
+  }
+
+  return args;
+}
+
+function parseArgs() {
+  const options = {
+    __proto__: null,
+    env: 'node',
+    browserField: false,
+    ignoreMissing: false,
+    collectBindings: false,
+    tmp: os.tmpdir(),
+    target: null
+  };
+
+  const args = getArgs(argv);
+
+  for (let i = 2; i < args.length; i++) {
+    const arg = args[i];
+
+    let next = '';
+
+    if (i + 1 < args.length)
+      next = args[i + 1];
+
+    switch (arg) {
+      case '-v':
+      case '--version': {
+        stdout.write(VERSION + '\n');
+        exit(0);
+        break;
+      }
+
+      case '--env': {
+        if (next !== 'node' && next !== 'browser')
+          throw new Error(`Invalid option for: ${arg}.`);
+
+        options.env = next;
+
+        i += 1;
+
+        break;
+      }
+
+      case '--node': {
+        options.env = 'node';
+        break;
+      }
+
+      case '--browser': {
+        options.env = 'browser';
+        break;
+      }
+
+      case '--browser-field': {
+        options.browserField = true;
+        break;
+      }
+
+      case '--ignore-missing': {
+        options.ignoreMissing = true;
+        break;
+      }
+
+      case '--collect-bindings': {
+        options.collectBindings = true;
+        break;
+      }
+
+      case '--tmp': {
+        if (!next)
+          throw new Error(`Invalid option for: ${arg}.`);
+
+        options.tmp = next;
+
+        break;
+      }
+
+      case '-h':
+      case '--help': {
+        stdout.write(HELP + '\n');
+        exit(0);
+        break;
+      }
+
+      default: {
+        if (arg.length === 0 || arg[0] === '-')
+          throw new Error(`Invalid argument: ${arg}.`);
+
+        options.target = arg;
+
+        break;
+      }
+    }
+  }
+
+  if (!options.target)
+    throw new Error('No entry point provided.');
+
+  return options;
+}
+
+(async () => {
+  let options;
+
+  try {
+    options = parseArgs();
+  } catch (e) {
+    if (e.code === 'ENOENT') {
+      const file = relative(cwd, e.path);
+      stderr.write(`File not found: ${file}.\n`);
+      return 1;
+    }
+    stderr.write(e.message + '\n');
+    return 1;
+  }
+
+  let file = options.target;
+
+  if (exists(file)) {
+    file = resolve(cwd, file);
+    file = require.resolve(file);
+  } else {
+    const paths = module.paths.slice();
+
+    module.paths.push(cwd, resolve(cwd, 'node_modules'));
+
+    try {
+      file = require.resolve(file);
+    } finally {
+      module.paths.length = 0;
+      module.paths.push(...paths);
+    }
+  }
+
+  const bundler = new Bundler();
+
+  bundler.env = options.env;
+  bundler.browserField = options.browserField;
+  bundler.ignoreMissing = options.ignoreMissing;
+  bundler.collectBindings = options.collectBindings;
+  bundler.tmp = options.tmp;
+
+  const code = bundler.bundle(file);
+
+  stdout.write(code + '\n');
+
+  return 0;
+})().then((code) => {
+  if (code !== -1) {
+    process.exitCode = code;
+    process.on('exit', () => exit(code));
+  }
+}).catch((err) => {
+  stderr.write(err.stack + '\n');
+  exit(1);
+});

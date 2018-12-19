@@ -1,0 +1,29 @@
+{
+  "name": "bpkg",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Minimal bundler for javascript",
+  "keywords": [
+  ],
+  "license": "MIT",
+  "repository": "git://github.com/chjj/bpkg.git",
+  "homepage": "https://github.com/chjj/bpkg",
+  "bugs": {
+    "url": "https://github.com/chjj/bpkg/issues"
+  },
+  "author": "Christopher Jeffrey <chjjeffrey@gmail.com>",
+  "main": "./lib/bpkg.js",
+  "bin": {
+    "bpkg": "./bin/bpkg"
+  },
+  "scripts": {
+    "lint": "eslint bin/* lib/*.js lib/templates || exit 0",
+    "test": "bmocha --reporter spec test/*-test.js"
+  },
+  "devDependencies": {
+    "bmocha": "^0.1.8"
+  },
+  "engines": {
+    "node": ">=8.0.0"
+  }
+}

@@ -91,7 +91,9 @@ function parseArgs() {
     browserField: false,
     ignoreMissing: false,
     collectBindings: false,
+    multi: false,
     tmp: os.tmpdir(),
+    output: null,
     target: null
   };
 
@@ -149,11 +151,26 @@ function parseArgs() {
         break;
       }
 
+      case '--multi': {
+        options.multi = true;
+        break;
+      }
+
       case '--tmp': {
         if (!next)
           throw new Error(`Invalid option for: ${arg}.`);
 
         options.tmp = next;
+
+        break;
+      }
+
+      case '-o':
+      case '--output': {
+        if (!next)
+          throw new Error(`Invalid option for: ${arg}.`);
+
+        options.output = next;
 
         break;
       }

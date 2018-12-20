@@ -172,6 +172,8 @@ function parseArgs() {
 
         options.output = next;
 
+        i += 1;
+
         break;
       }
 
@@ -230,6 +232,18 @@ function parseArgs() {
       module.paths.length = 0;
       module.paths.push(...paths);
     }
+  }
+
+  if (options.multi) {
+    const multi = require('../lib/multi');
+
+    if (!options.output) {
+      stderr.write('Must select output file!\n');
+      return 1;
+    }
+
+    multi.build(options.target, options.output);
+    return 0;
   }
 
   const bundler = new Bundler();

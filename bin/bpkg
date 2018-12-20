@@ -234,6 +234,7 @@ function parseArgs() {
     }
   }
 
+  /*
   if (options.multi) {
     const multi = require('../lib/multi');
 
@@ -245,6 +246,7 @@ function parseArgs() {
     multi.build(options.target, options.output);
     return 0;
   }
+  */
 
   const bundler = new Bundler();
 
@@ -252,6 +254,7 @@ function parseArgs() {
   bundler.browserField = options.browserField;
   bundler.ignoreMissing = options.ignoreMissing;
   bundler.collectBindings = options.collectBindings;
+  bundler.multi = options.multi;
   bundler.tmp = options.tmp;
 
   const code = bundler.bundle(file, options.output);

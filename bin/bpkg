@@ -254,9 +254,10 @@ function parseArgs() {
   bundler.collectBindings = options.collectBindings;
   bundler.tmp = options.tmp;
 
-  const code = bundler.bundle(file);
+  const code = bundler.bundle(file, options.output);
 
-  stdout.write(code + '\n');
+  if (code)
+    stdout.write(code + '\n');
 
   return 0;
 })().then((code) => {

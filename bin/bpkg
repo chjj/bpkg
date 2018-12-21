@@ -116,6 +116,7 @@ function parseArgs() {
         break;
       }
 
+      case '-e':
       case '--env': {
         if (next !== 'node' && next !== 'browser')
           throw new Error(`Invalid option for: ${arg}.`);
@@ -127,41 +128,49 @@ function parseArgs() {
         break;
       }
 
+      case '-n':
       case '--node': {
         options.env = 'node';
         break;
       }
 
+      case '-b':
       case '--browser': {
         options.env = 'browser';
         break;
       }
 
+      case '-f':
       case '--browser-field': {
         options.browserField = true;
         break;
       }
 
+      case '-i':
       case '--ignore-missing': {
         options.ignoreMissing = true;
         break;
       }
 
+      case '-c':
       case '--collect-bindings': {
         options.collectBindings = true;
         break;
       }
 
+      case '-e':
       case '--exclude-source': {
         options.excludeSource = true;
         break;
       }
 
+      case '-m':
       case '--multi': {
         options.multi = true;
         break;
       }
 
+      case '-t':
       case '--tmp': {
         if (!next)
           throw new Error(`Invalid option for: ${arg}.`);

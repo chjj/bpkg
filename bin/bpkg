@@ -14,7 +14,7 @@ const os = require('os');
 const {resolve} = require('path');
 const {Bundler} = require('../');
 
-const cwd = process.cwd();
+const CWD = process.cwd();
 const {argv, stdout, stderr, exit} = process;
 
 /*
@@ -43,6 +43,21 @@ function exists(file) {
     if (e.code === 'ENOENT')
       return false;
     throw e;
+  }
+}
+
+function requireLocal(file) {
+  assert(typeof file === 'string');
+
+  const paths = module.paths.slice();
+
+  module.paths.push(CWD, resolve(CWD, 'node_modules'));
+
+  try {
+    return require.resolve(file);
+  } finally {
+    module.paths.length = 0;
+    module.paths.push(...paths);
   }
 }
 
@@ -95,7 +110,7 @@ function parseArgs() {
     multi: false,
     tmp: os.tmpdir(),
     output: null,
-    target: '.'
+    target: null
   };
 
   const args = getArgs(argv);
@@ -203,7 +218,10 @@ function parseArgs() {
         if (arg.length === 0 || arg[0] === '-')
           throw new Error(`Invalid argument: ${arg}.`);
 
-        options.target = arg;
+        if (options.target)
+          options.output = arg;
+        else
+          options.target = arg;
 
         break;
       }
@@ -211,7 +229,20 @@ function parseArgs() {
   }
 
   if (!options.target)
-    throw new Error('No entry point provided.');
+    options.target = '.';
+
+  if (!options.multi) {
+    let file = options.target;
+
+    if (exists(file)) {
+      file = resolve(CWD, file);
+      file = require.resolve(file);
+    } else {
+      file = requireLocal(file);
+    }
+
+    options.target = file;
+  }
 
   return options;
 }
@@ -226,26 +257,6 @@ function parseArgs() {
     return 1;
   }
 
-  let file = options.target;
-
-  if (!options.multi) {
-    if (exists(file)) {
-      file = resolve(cwd, file);
-      file = require.resolve(file);
-    } else {
-      const paths = module.paths.slice();
-
-      module.paths.push(cwd, resolve(cwd, 'node_modules'));
-
-      try {
-        file = require.resolve(file);
-      } finally {
-        module.paths.length = 0;
-        module.paths.push(...paths);
-      }
-    }
-  }
-
   const bundler = new Bundler();
 
   bundler.env = options.env;
@@ -256,7 +267,7 @@ function parseArgs() {
   bundler.multi = options.multi;
   bundler.tmp = options.tmp;
 
-  const code = bundler.bundle(file, options.output);
+  const code = bundler.bundle(options.target, options.output);
 
   if (code)
     stdout.write(code + '\n');

@@ -103,7 +103,6 @@ function parseArgs() {
   const options = {
     __proto__: null,
     env: 'node',
-    target: null,
     browserField: false,
     ignoreMissing: false,
     collectBindings: false,
@@ -112,6 +111,7 @@ function parseArgs() {
     multi: false,
     single: false,
     minify: false,
+    transforms: [],
     tmp: os.tmpdir(),
     output: null,
     file: null
@@ -141,18 +141,6 @@ function parseArgs() {
           throw new Error(`Invalid option for: ${arg}.`);
 
         options.env = next;
-
-        i += 1;
-
-        break;
-      }
-
-      case '-t':
-      case '--target': {
-        if (!next)
-          throw new Error(`Invalid option for: ${arg}.`);
-
-        options.target = next;
 
         i += 1;
 
@@ -216,6 +204,18 @@ function parseArgs() {
       case '-u':
       case '--minify': {
         options.minify = true;
+        break;
+      }
+
+      case '-t':
+      case '--transform': {
+        if (!next || next[0] === '-')
+          throw new Error(`Invalid option for: ${arg}.`);
+
+        options.transforms.push(...next.split(','));
+
+        i += 1;
+
         break;
       }
 
@@ -292,20 +292,7 @@ function parseArgs() {
     return 1;
   }
 
-  const bundler = new Bundler();
-
-  bundler.env = options.env;
-  bundler.target = options.target;
-  bundler.browserField = options.browserField;
-  bundler.ignoreMissing = options.ignoreMissing;
-  bundler.collectBindings = options.collectBindings;
-  bundler.excludeSource = options.excludeSource;
-  bundler.noLicense = options.noLicense;
-  bundler.multi = options.multi;
-  bundler.single = options.single;
-  bundler.minify = options.minify;
-  bundler.tmp = options.tmp;
-
+  const bundler = new Bundler(options);
   const code = await bundler.bundle(options.file, options.output);
 
   if (code)

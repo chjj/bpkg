@@ -187,17 +187,19 @@ function parseArgs() {
 
       case '-t':
       case '--tmp': {
-        if (!next)
+        if (!next || next[0] === '-')
           throw new Error(`Invalid option for: ${arg}.`);
 
         options.tmp = next;
+
+        i += 1;
 
         break;
       }
 
       case '-o':
       case '--output': {
-        if (!next)
+        if (!next || next[0] === '-')
           throw new Error(`Invalid option for: ${arg}.`);
 
         options.output = next;

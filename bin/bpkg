@@ -46,7 +46,7 @@ function exists(file) {
   }
 }
 
-function requireLocal(file) {
+function resolveLocal(file) {
   assert(typeof file === 'string');
 
   const paths = module.paths.slice();
@@ -273,7 +273,7 @@ function parseArgs() {
       file = resolve(CWD, file);
       file = require.resolve(file);
     } else {
-      file = requireLocal(file);
+      file = resolveLocal(file);
     }
 
     options.file = file;

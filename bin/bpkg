@@ -107,7 +107,9 @@ function parseArgs() {
     ignoreMissing: false,
     collectBindings: false,
     excludeSource: false,
+    noLicense: false,
     multi: false,
+    single: false,
     tmp: os.tmpdir(),
     output: null,
     target: null
@@ -179,9 +181,21 @@ function parseArgs() {
         break;
       }
 
+      case '-l':
+      case '--no-license': {
+        options.noLicense = true;
+        break;
+      }
+
       case '-m':
       case '--multi': {
         options.multi = true;
+        break;
+      }
+
+      case '-s':
+      case '--single': {
+        options.single = true;
         break;
       }
 
@@ -266,7 +280,9 @@ function parseArgs() {
   bundler.ignoreMissing = options.ignoreMissing;
   bundler.collectBindings = options.collectBindings;
   bundler.excludeSource = options.excludeSource;
+  bundler.noLicense = options.noLicense;
   bundler.multi = options.multi;
+  bundler.single = options.single;
   bundler.tmp = options.tmp;
 
   const code = bundler.bundle(options.target, options.output);

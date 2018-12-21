@@ -288,7 +288,7 @@ function parseArgs() {
   const code = bundler.bundle(options.target, options.output);
 
   if (code)
-    stdout.write(code + '\n');
+    stdout.write(code);
 
   return 0;
 })().then((code) => {

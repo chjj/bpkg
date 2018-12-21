@@ -110,6 +110,7 @@ function parseArgs() {
     noLicense: false,
     multi: false,
     single: false,
+    minify: false,
     tmp: os.tmpdir(),
     output: null,
     target: null
@@ -199,6 +200,12 @@ function parseArgs() {
         break;
       }
 
+      case '-u':
+      case '--minify': {
+        options.minify = true;
+        break;
+      }
+
       case '-t':
       case '--tmp': {
         if (!next || next[0] === '-')
@@ -283,6 +290,7 @@ function parseArgs() {
   bundler.noLicense = options.noLicense;
   bundler.multi = options.multi;
   bundler.single = options.single;
+  bundler.minify = options.minify;
   bundler.tmp = options.tmp;
 
   const code = bundler.bundle(options.target, options.output);

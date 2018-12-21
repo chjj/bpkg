@@ -173,7 +173,7 @@ function parseArgs() {
         break;
       }
 
-      case '-e':
+      case '-x':
       case '--exclude-source': {
         options.excludeSource = true;
         break;

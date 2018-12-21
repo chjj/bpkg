@@ -11,7 +11,7 @@
 const assert = require('assert');
 const fs = require('fs');
 const os = require('os');
-const {relative, resolve} = require('path');
+const {resolve} = require('path');
 const {Bundler} = require('../');
 
 const cwd = process.cwd();
@@ -91,10 +91,11 @@ function parseArgs() {
     browserField: false,
     ignoreMissing: false,
     collectBindings: false,
+    excludeSource: false,
     multi: false,
     tmp: os.tmpdir(),
     output: null,
-    target: null
+    target: '.'
   };
 
   const args = getArgs(argv);
@@ -148,6 +149,11 @@ function parseArgs() {
 
       case '--collect-bindings': {
         options.collectBindings = true;
+        break;
+      }
+
+      case '--exclude-source': {
+        options.excludeSource = true;
         break;
       }
 
@@ -207,46 +213,29 @@ function parseArgs() {
   try {
     options = parseArgs();
   } catch (e) {
-    if (e.code === 'ENOENT') {
-      const file = relative(cwd, e.path);
-      stderr.write(`File not found: ${file}.\n`);
-      return 1;
-    }
     stderr.write(e.message + '\n');
     return 1;
   }
 
   let file = options.target;
 
-  if (exists(file)) {
-    file = resolve(cwd, file);
-    file = require.resolve(file);
-  } else {
-    const paths = module.paths.slice();
-
-    module.paths.push(cwd, resolve(cwd, 'node_modules'));
-
-    try {
+  if (!options.multi) {
+    if (exists(file)) {
+      file = resolve(cwd, file);
       file = require.resolve(file);
-    } finally {
-      module.paths.length = 0;
-      module.paths.push(...paths);
+    } else {
+      const paths = module.paths.slice();
+
+      module.paths.push(cwd, resolve(cwd, 'node_modules'));
+
+      try {
+        file = require.resolve(file);
+      } finally {
+        module.paths.length = 0;
+        module.paths.push(...paths);
+      }
     }
   }
-
-  /*
-  if (options.multi) {
-    const multi = require('../lib/multi');
-
-    if (!options.output) {
-      stderr.write('Must select output file!\n');
-      return 1;
-    }
-
-    multi.build(options.target, options.output);
-    return 0;
-  }
-  */
 
   const bundler = new Bundler();
 
@@ -254,6 +243,7 @@ function parseArgs() {
   bundler.browserField = options.browserField;
   bundler.ignoreMissing = options.ignoreMissing;
   bundler.collectBindings = options.collectBindings;
+  bundler.excludeSource = options.excludeSource;
   bundler.multi = options.multi;
   bundler.tmp = options.tmp;
 

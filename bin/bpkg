@@ -103,6 +103,7 @@ function parseArgs() {
   const options = {
     __proto__: null,
     env: 'node',
+    target: null,
     browserField: false,
     ignoreMissing: false,
     collectBindings: false,
@@ -113,7 +114,7 @@ function parseArgs() {
     minify: false,
     tmp: os.tmpdir(),
     output: null,
-    target: null
+    file: null
   };
 
   const args = getArgs(argv);
@@ -140,6 +141,18 @@ function parseArgs() {
           throw new Error(`Invalid option for: ${arg}.`);
 
         options.env = next;
+
+        i += 1;
+
+        break;
+      }
+
+      case '-t':
+      case '--target': {
+        if (!next)
+          throw new Error(`Invalid option for: ${arg}.`);
+
+        options.target = next;
 
         i += 1;
 
@@ -206,7 +219,6 @@ function parseArgs() {
         break;
       }
 
-      case '-t':
       case '--tmp': {
         if (!next || next[0] === '-')
           throw new Error(`Invalid option for: ${arg}.`);
@@ -241,21 +253,21 @@ function parseArgs() {
         if (arg.length === 0 || arg[0] === '-')
           throw new Error(`Invalid argument: ${arg}.`);
 
-        if (options.target)
+        if (options.file)
           options.output = arg;
         else
-          options.target = arg;
+          options.file = arg;
 
         break;
       }
     }
   }
 
-  if (!options.target)
-    options.target = '.';
+  if (!options.file)
+    options.file = '.';
 
   if (!options.multi) {
-    let file = options.target;
+    let file = options.file;
 
     if (exists(file)) {
       file = resolve(CWD, file);
@@ -264,7 +276,7 @@ function parseArgs() {
       file = requireLocal(file);
     }
 
-    options.target = file;
+    options.file = file;
   }
 
   return options;
@@ -283,6 +295,7 @@ function parseArgs() {
   const bundler = new Bundler();
 
   bundler.env = options.env;
+  bundler.target = options.target;
   bundler.browserField = options.browserField;
   bundler.ignoreMissing = options.ignoreMissing;
   bundler.collectBindings = options.collectBindings;
@@ -293,7 +306,7 @@ function parseArgs() {
   bundler.minify = options.minify;
   bundler.tmp = options.tmp;
 
-  const code = bundler.bundle(options.target, options.output);
+  const code = bundler.bundle(options.file, options.output);
 
   if (code)
     stdout.write(code);

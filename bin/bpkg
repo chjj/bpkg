@@ -306,7 +306,7 @@ function parseArgs() {
   bundler.minify = options.minify;
   bundler.tmp = options.tmp;
 
-  const code = bundler.bundle(options.file, options.output);
+  const code = await bundler.bundle(options.file, options.output);
 
   if (code)
     stdout.write(code);

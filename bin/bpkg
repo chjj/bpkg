@@ -111,7 +111,6 @@ function parseArgs() {
     multi: false,
     single: false,
     minify: false,
-    transforms: [],
     tmp: os.tmpdir(),
     output: null,
     file: null
@@ -208,17 +207,6 @@ function parseArgs() {
       }
 
       case '-t':
-      case '--transform': {
-        if (!next || next[0] === '-')
-          throw new Error(`Invalid option for: ${arg}.`);
-
-        options.transforms.push(...next.split(','));
-
-        i += 1;
-
-        break;
-      }
-
       case '--tmp': {
         if (!next || next[0] === '-')
           throw new Error(`Invalid option for: ${arg}.`);

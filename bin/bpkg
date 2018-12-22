@@ -226,6 +226,8 @@ function parseArgs() {
 
         options.plugins.push(...next.split(','));
 
+        i += 1;
+
         break;
       }
 

@@ -103,6 +103,7 @@ function parseArgs() {
   const options = {
     __proto__: null,
     env: 'node',
+    extensions: ['.js', '.mjs'],
     browserField: false,
     ignoreMissing: false,
     collectBindings: false,
@@ -111,6 +112,7 @@ function parseArgs() {
     multi: false,
     single: false,
     minify: false,
+    plugins: [],
     tmp: os.tmpdir(),
     output: null,
     file: null
@@ -140,6 +142,17 @@ function parseArgs() {
           throw new Error(`Invalid option for: ${arg}.`);
 
         options.env = next;
+
+        i += 1;
+
+        break;
+      }
+
+      case '--extensions': {
+        if (!next || next[0] === '-')
+          throw new Error(`Invalid option for: ${arg}.`);
+
+        options.extensions.push(...next.split(','));
 
         i += 1;
 
@@ -203,6 +216,16 @@ function parseArgs() {
       case '-u':
       case '--minify': {
         options.minify = true;
+        break;
+      }
+
+      case '-p':
+      case '--plugins': {
+        if (!next || next[0] === '-')
+          throw new Error(`Invalid option for: ${arg}.`);
+
+        options.plugins.push(...next.split(','));
+
         break;
       }
 

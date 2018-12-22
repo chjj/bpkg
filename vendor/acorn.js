@@ -142,16 +142,30 @@ var __node_modules__ = [
 const acorn = (__node_require__(1));
 const walk = (__node_require__(21));
 
-acorn.Parser = acorn.Parser.extend(
+const Parser = acorn.Parser.extend(
   (__node_require__(22)),
   (__node_require__(23)),
   (__node_require__(24)),
-  (__node_require__(25)).default
+  (__node_require__(25))
 );
 
 walk.base.Import = () => {};
 
-acorn.walk = walk;
+acorn.parse = Parser.parse.bind(Parser);
+acorn.parseExpressionAt = Parser.parseExpressionAt.bind(Parser);
+acorn.tokenizer = Parser.tokenizer.bind(Parser);
+
+acorn.walk = (node, baseVisitor, state, override) => {
+  const nodes = [];
+
+  const cb = (node, st, type) => {
+    nodes.push(node);
+  };
+
+  walk.full(node, cb, baseVisitor, state, override);
+
+  return nodes;
+};
 
 module.exports = acorn;
 }],

@@ -112,6 +112,9 @@ function parseArgs() {
     multi: false,
     single: false,
     minify: false,
+    exports: false,
+    global: false,
+    name: null,
     plugins: [],
     tmp: os.tmpdir(),
     output: null,
@@ -216,6 +219,27 @@ function parseArgs() {
       case '-u':
       case '--minify': {
         options.minify = true;
+        break;
+      }
+
+      case '--exports': {
+        options.exports = true;
+        break;
+      }
+
+      case '--global': {
+        options.global = true;
+        break;
+      }
+
+      case '--name': {
+        if (!next || next[0] === '-')
+          throw new Error(`Invalid option for: ${arg}.`);
+
+        options.name = next;
+
+        i += 1;
+
         break;
       }
 

@@ -81,7 +81,7 @@ To compile a node.js module (including all of it's native bindings) to a single
 file:
 
 ``` bash
-$ bpkg ./bcrypto bcrypto.js
+$ bpkg ./node_modules/bcrypto bcrypto.js
 $ wc -l bcrypto.js
 75543 bcrypto.js
 ```
@@ -92,7 +92,7 @@ opened with `process.dlopen` when required.
 To included native modules as separate files:
 
 ``` bash
-$ bpkg --collect-bindings ./bcrypto bcrypto
+$ bpkg --collect-bindings ./node_modules/bcrypto bcrypto
 $ ls bcrypto/
 ./  ../  bindings/  index.js
 $ ls bcrypto/bindings/
@@ -104,7 +104,7 @@ $ ls bcrypto/bindings/
 To package all files in a dependency tree into a nice neat tarball:
 
 ``` bash
-$ bpkg --multi --collect-bindings --output=bcrypto.tar.gz ./bcrypto
+$ bpkg --multi --collect-bindings --output=bcrypto.tar.gz ./node_modules/bcrypto
 $ tar -tzf bcrypto.tar.gz
 bcrypto/
 bcrypto/LICENSE
@@ -131,7 +131,7 @@ NPM (an OS package manager, for example).
 Browser bundles are basically browserify.
 
 ``` bash
-$ bpkg --browser ./bcrypto bcrypto.js
+$ bpkg --browser ./node_modules/bcrypto bcrypto.js
 $ wc -l bcrypto.js
 51910 bcrypto.js
 ```
@@ -139,13 +139,13 @@ $ wc -l bcrypto.js
 To expose on module.exports:
 
 ``` bash
-$ bpkg --browser --exports ./bcrypto bcrypto.js
+$ bpkg --browser --exports ./node_modules/bcrypto bcrypto.js
 ```
 
 To expose globally:
 
 ``` bash
-$ bpkg --browser --global --name=bcrypto ./bcrypto bcrypto.js
+$ bpkg --browser --global --name=bcrypto ./node_modules/bcrypto bcrypto.js
 ```
 
 ## Plugins

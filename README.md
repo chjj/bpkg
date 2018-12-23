@@ -27,7 +27,7 @@ $ bpkg -h
     -l, --no-license        do not place licenses at the top of the bundle
     -m, --multi             output module as multiple files
     -s, --single            build a single file without transpiling modules
-    -u, --minify            minify bundle or files
+    -u, --minify            minify bundle or files (using uglify-es)
     --exports               expose on module.exports for browser bundles
     --global                expose globally for browser bundles
     --name <name>           name to use for global exposure (default: pkg.name)
@@ -36,6 +36,13 @@ $ bpkg -h
     -o, --output <file>     output file or directory (default: stdout)
     -h, --help              output usage information
 ```
+
+## Features
+
+- Node.js native module support for bundles
+- Full browser support
+- ES modules
+- Uglify-ES support included
 
 ## Examples
 

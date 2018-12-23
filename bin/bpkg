@@ -11,7 +11,6 @@
 const assert = require('assert');
 const os = require('os');
 const {Bundler} = require('../');
-
 const {argv, stdout, stderr, exit} = process;
 
 /*
@@ -26,6 +25,24 @@ const HELP = `
   Options:
 
     -v, --version           output the version number
+    -e, --env <name>        set environment, node or browser (default: node)
+    -n, --node              set environment to node
+    -b, --browser           set environment to browser
+    --extensions <a,b,...>  list of extensions (default: .js,.mjs,.json,.node)
+    -f, --browser-field     force usage of package.json "browser" field
+    -i, --ignore-missing    ignore missing modules during compilation
+    -c, --collect-bindings  include bindings separately
+    -x, --exclude-source    exclude c++ source in multi mode
+    -l, --no-license        do not place licenses at the top of the bundle
+    -m, --multi             output module as multiple files
+    -s, --single            build a single file without transpiling modules
+    -u, --minify            minify bundle or files
+    --exports               expose on module.exports for browser bundles
+    --global                expose globally for browser bundles
+    --name                  name to use for global exposure
+    -p, --plugins           comma separated list of plugins
+    -t, --tmp               path to temporary directory
+    -o, --output <file>     output file or directory (default: stdout)
     -h, --help              output usage information
 `;
 
@@ -123,17 +140,6 @@ function parseArgs() {
         break;
       }
 
-      case '--extensions': {
-        if (!next || next[0] === '-')
-          throw new Error(`Invalid option for: ${arg}.`);
-
-        options.extensions.push(...next.split(','));
-
-        i += 1;
-
-        break;
-      }
-
       case '-n':
       case '--node': {
         options.env = 'node';
@@ -143,6 +149,17 @@ function parseArgs() {
       case '-b':
       case '--browser': {
         options.env = 'browser';
+        break;
+      }
+
+      case '--extensions': {
+        if (!next || next[0] === '-')
+          throw new Error(`Invalid option for: ${arg}.`);
+
+        options.extensions.push(...next.split(','));
+
+        i += 1;
+
         break;
       }
 
@@ -288,8 +305,9 @@ function parseArgs() {
     return 1;
   }
 
+  const {file, output} = options;
   const bundler = new Bundler(options);
-  const code = await bundler.bundle(options.file, options.output);
+  const code = await bundler.bundle(file, output);
 
   if (code)
     stdout.write(code);

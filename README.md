@@ -39,6 +39,7 @@ $ bpkg -h
 
 ## Features
 
+- No external dependencies
 - Node.js native module support for bundles
 - Full browser support
 - ES modules

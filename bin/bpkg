@@ -9,12 +9,9 @@
 'use strict';
 
 const assert = require('assert');
-const fs = require('fs');
 const os = require('os');
-const {resolve} = require('path');
 const {Bundler} = require('../');
 
-const CWD = process.cwd();
 const {argv, stdout, stderr, exit} = process;
 
 /*
@@ -35,31 +32,6 @@ const HELP = `
 /*
  * Helpers
  */
-
-function exists(file) {
-  try {
-    return fs.statSync(file);
-  } catch (e) {
-    if (e.code === 'ENOENT')
-      return false;
-    throw e;
-  }
-}
-
-function resolveLocal(file) {
-  assert(typeof file === 'string');
-
-  const paths = module.paths.slice();
-
-  module.paths.push(CWD, resolve(CWD, 'node_modules'));
-
-  try {
-    return require.resolve(file);
-  } finally {
-    module.paths.length = 0;
-    module.paths.push(...paths);
-  }
-}
 
 function getArgs(argv) {
   assert(Array.isArray(argv));
@@ -302,19 +274,6 @@ function parseArgs() {
 
   if (!options.file)
     options.file = '.';
-
-  if (!options.multi) {
-    let file = options.file;
-
-    if (exists(file)) {
-      file = resolve(CWD, file);
-      file = require.resolve(file);
-    } else {
-      file = resolveLocal(file);
-    }
-
-    options.file = file;
-  }
 
   return options;
 }

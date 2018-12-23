@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /*!
- * bpkg - minimal bundler for javascript
+ * bpkg - bundler for node.js
  * Copyright (c) 2018, Christopher Jeffrey (MIT License).
  * https://github.com/chjj/bpkg
  */
@@ -28,7 +28,7 @@ const HELP = `
     -e, --env <name>        set environment, node or browser (default: node)
     -n, --node              set environment to node
     -b, --browser           set environment to browser
-    --extensions <a,b,...>  list of extensions (default: .js,.mjs,.json,.node)
+    --extensions <a,b,..>   list of extensions (default: .js,.mjs,.json,.node)
     -f, --browser-field     force usage of package.json "browser" field
     -i, --ignore-missing    ignore missing modules during compilation
     -c, --collect-bindings  include bindings separately
@@ -39,9 +39,9 @@ const HELP = `
     -u, --minify            minify bundle or files
     --exports               expose on module.exports for browser bundles
     --global                expose globally for browser bundles
-    --name                  name to use for global exposure
-    -p, --plugins           comma separated list of plugins
-    -t, --tmp               path to temporary directory
+    --name <name>           name to use for global exposure (default: pkg.name)
+    -p, --plugins <a,b,..>  comma separated list of plugins
+    -t, --tmp <path>        path to temporary directory (default: os.tmpdir())
     -o, --output <file>     output file or directory (default: stdout)
     -h, --help              output usage information
 `;

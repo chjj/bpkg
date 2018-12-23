@@ -1,7 +1,7 @@
 # bpkg
 
-Bundler and build tool for node.js. Similar to browserify, with a focus on
-node.js.
+Bundler and build tool for node.js. Similar to browserify, with a stronger
+focus on node.js.
 
 Bpkg is a small auditable tool requiring zero external dependencies while still
 including nearly full browserify functionality.
@@ -44,6 +44,34 @@ $ bpkg -h
 - Full browser support
 - ES modules
 - Uglify-ES support included
+
+## Why?
+
+### Node.js Support
+
+Very few bundlers have good node.js support. To demonstrate this, I know of no
+simpler example than:
+
+``` js
+const binding = require('bindings')('my-module.node');
+```
+
+No existing bundler handles the above code properly out of the box! Why?
+`bindings` is _the_ way to load native modules in node.js. It's a very common
+pattern, yet nearly everything lacks support for it.
+
+bpkg will _inline_ the native modules into a single JS file (or collect them
+separately if so desired), and replace the `require('bindings')` calls
+accordingly.
+
+This is only one example. There are dozens of other instances of existing
+compilers not playing well with node.js.
+
+### Lack of bloat
+
+Several compilers and bundlers have become very bloated over time.  bpkg
+requires _zero external dependencies_. This is for security purposes and
+auditability, as well as simplicity.
 
 ## Examples
 

@@ -87,28 +87,6 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  *
- * License for acorn-import-meta@1.0.0:
- *
- * Copyright (C) 2017-2018 by Adrian Heine
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- *
  * License for acorn-dynamic-import@4.0.0:
  *
  * MIT License
@@ -132,6 +110,28 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
+ *
+ * License for acorn-import-meta@1.0.0:
+ *
+ * Copyright (C) 2017-2018 by Adrian Heine
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  *
  */
 
@@ -6184,56 +6184,7 @@ module.exports = function(Parser) {
   }
 }
 }],
-  [/* 24 */ '/index.js', function(exports, require, module, __filename, __dirname) {
-"use strict"
-
-const acorn = __node_require__(1)
-const tt = acorn.tokTypes
-
-const skipWhiteSpace = /(?:\s|\/\/.*|\/\*[^]*?\*\/)*/g
-
-const nextTokenIsDot = parser => {
-  skipWhiteSpace.lastIndex = parser.pos
-  let skip = skipWhiteSpace.exec(parser.input)
-  let next = parser.pos + skip[0].length
-  return parser.input.slice(next, next + 1) === "."
-}
-
-module.exports = function(Parser) {
-  return class extends Parser {
-    parseExprAtom(refDestructuringErrors) {
-      if (this.type !== tt._import || !nextTokenIsDot(this)) return super.parseExprAtom(refDestructuringErrors)
-
-      if (!this.options.allowImportExportEverywhere && !this.inModule) {
-        this.raise(this.start, "'import' and 'export' may appear only with 'sourceType: module'")
-      }
-
-      let node = this.startNode()
-      node.meta = this.parseIdent(true)
-      this.expect(tt.dot)
-      node.property = this.parseIdent(true)
-      if (node.property.name !== "meta") {
-        this.raiseRecoverable(node.property.start, "The only valid meta property for import is import.meta")
-      }
-      if (this.containsEsc) {
-        this.raiseRecoverable(node.property.start, "\"meta\" in import.meta must not contain escape sequences")
-      }
-      return this.finishNode(node, "MetaProperty")
-    }
-
-    parseStatement(context, topLevel, exports) {
-      if (this.type !== tt._import || !nextTokenIsDot(this)) {
-        return super.parseStatement(context, topLevel, exports)
-      }
-
-      let node = this.startNode()
-      let expr = this.parseExpression()
-      return this.parseExpressionStatement(node, expr)
-    }
-  }
-}
-}],
-  [/* 25 */ '/src/index.js', function(exports, require, module, __filename, __dirname) {
+  [/* 24 */ '/src/index.js', function(exports, require, module, __filename, __dirname) {
 /* eslint-disable no-underscore-dangle */
 var __bpkg_import_0__ = __node_require__(1);
 var tt = __bpkg_import_0__.tokTypes;
@@ -6288,6 +6239,55 @@ if ((__bpkg_default_1__ && typeof __bpkg_default_1__ === "object")
   exports.default = exports;
 } else {
   exports.default = __bpkg_default_1__;
+}
+}],
+  [/* 25 */ '/index.js', function(exports, require, module, __filename, __dirname) {
+"use strict"
+
+const acorn = __node_require__(1)
+const tt = acorn.tokTypes
+
+const skipWhiteSpace = /(?:\s|\/\/.*|\/\*[^]*?\*\/)*/g
+
+const nextTokenIsDot = parser => {
+  skipWhiteSpace.lastIndex = parser.pos
+  let skip = skipWhiteSpace.exec(parser.input)
+  let next = parser.pos + skip[0].length
+  return parser.input.slice(next, next + 1) === "."
+}
+
+module.exports = function(Parser) {
+  return class extends Parser {
+    parseExprAtom(refDestructuringErrors) {
+      if (this.type !== tt._import || !nextTokenIsDot(this)) return super.parseExprAtom(refDestructuringErrors)
+
+      if (!this.options.allowImportExportEverywhere && !this.inModule) {
+        this.raise(this.start, "'import' and 'export' may appear only with 'sourceType: module'")
+      }
+
+      let node = this.startNode()
+      node.meta = this.parseIdent(true)
+      this.expect(tt.dot)
+      node.property = this.parseIdent(true)
+      if (node.property.name !== "meta") {
+        this.raiseRecoverable(node.property.start, "The only valid meta property for import is import.meta")
+      }
+      if (this.containsEsc) {
+        this.raiseRecoverable(node.property.start, "\"meta\" in import.meta must not contain escape sequences")
+      }
+      return this.finishNode(node, "MetaProperty")
+    }
+
+    parseStatement(context, topLevel, exports) {
+      if (this.type !== tt._import || !nextTokenIsDot(this)) {
+        return super.parseStatement(context, topLevel, exports)
+      }
+
+      let node = this.startNode()
+      let expr = this.parseExpression()
+      return this.parseExpressionStatement(node, expr)
+    }
+  }
 }
 }]
 ];

@@ -139,14 +139,14 @@ var __node_modules__ = [
   [/* 0 */ '/index.js', function(exports, require, module, __filename, __dirname) {
 'use strict';
 
-const acorn = (__node_require__(1));
-const walk = (__node_require__(21));
+const acorn = __node_require__(1);
+const walk = __node_require__(21);
 
 const Parser = acorn.Parser.extend(
-  (__node_require__(22)),
-  (__node_require__(23)),
-  (__node_require__(24)),
-  (__node_require__(25))
+  __node_require__(22),
+  __node_require__(23),
+  __node_require__(24),
+  __node_require__(25)
 );
 
 walk.base.Import = () => {};
@@ -186,54 +186,54 @@ module.exports = acorn;
 //
 // [walk]: util/walk.js
 
-var __bpkg_import_0__ = (__node_require__(2));
+var __bpkg_import_0__ = __node_require__(2);
 var Parser = __bpkg_import_0__.Parser;
 
-(__node_require__(10));
+__node_require__(10);
 
-(__node_require__(11));
+__node_require__(11);
 
-(__node_require__(12));
+__node_require__(12);
 
-(__node_require__(13));
+__node_require__(13);
 
-(__node_require__(14));
+__node_require__(14);
 
-(__node_require__(15));
+__node_require__(15);
 
 
-var __bpkg_export_0__ = (__node_require__(2));
+var __bpkg_export_0__ = __node_require__(2);
 exports.Parser = __bpkg_export_0__.Parser;
 exports._esModule = true;
 
-var __bpkg_export_1__ = (__node_require__(6));
+var __bpkg_export_1__ = __node_require__(6);
 exports.defaultOptions = __bpkg_export_1__.defaultOptions;
 
-var __bpkg_export_2__ = (__node_require__(8));
+var __bpkg_export_2__ = __node_require__(8);
 exports.Position = __bpkg_export_2__.Position;
 exports.SourceLocation = __bpkg_export_2__.SourceLocation;
 exports.getLineInfo = __bpkg_export_2__.getLineInfo;
 
-var __bpkg_export_3__ = (__node_require__(16));
+var __bpkg_export_3__ = __node_require__(16);
 exports.Node = __bpkg_export_3__.Node;
 
-var __bpkg_export_4__ = (__node_require__(4));
+var __bpkg_export_4__ = __node_require__(4);
 exports.TokenType = __bpkg_export_4__.TokenType;
 exports.tokTypes = __bpkg_export_4__.types;
 exports.keywordTypes = __bpkg_export_4__.keywords;
 
-var __bpkg_export_5__ = (__node_require__(17));
+var __bpkg_export_5__ = __node_require__(17);
 exports.TokContext = __bpkg_export_5__.TokContext;
 exports.tokContexts = __bpkg_export_5__.types;
 
-var __bpkg_export_6__ = (__node_require__(3));
+var __bpkg_export_6__ = __node_require__(3);
 exports.isIdentifierChar = __bpkg_export_6__.isIdentifierChar;
 exports.isIdentifierStart = __bpkg_export_6__.isIdentifierStart;
 
-var __bpkg_export_7__ = (__node_require__(18));
+var __bpkg_export_7__ = __node_require__(18);
 exports.Token = __bpkg_export_7__.Token;
 
-var __bpkg_export_8__ = (__node_require__(5));
+var __bpkg_export_8__ = __node_require__(5);
 exports.isNewLine = __bpkg_export_8__.isNewLine;
 exports.lineBreak = __bpkg_export_8__.lineBreak;
 exports.lineBreakG = __bpkg_export_8__.lineBreakG;
@@ -276,20 +276,20 @@ var tokenizer = function tokenizer(input, options) {
 exports.tokenizer = tokenizer;
 }],
   [/* 2 */ '/src/state.js', function(exports, require, module, __filename, __dirname) {
-var __bpkg_import_0__ = (__node_require__(3));
+var __bpkg_import_0__ = __node_require__(3);
 var reservedWords = __bpkg_import_0__.reservedWords;
 var keywords = __bpkg_import_0__.keywords;
 
-var __bpkg_import_1__ = (__node_require__(4));
+var __bpkg_import_1__ = __node_require__(4);
 var tt = __bpkg_import_1__.types;
 
-var __bpkg_import_2__ = (__node_require__(5));
+var __bpkg_import_2__ = __node_require__(5);
 var lineBreak = __bpkg_import_2__.lineBreak;
 
-var __bpkg_import_3__ = (__node_require__(6));
+var __bpkg_import_3__ = __node_require__(6);
 var getOptions = __bpkg_import_3__.getOptions;
 
-var __bpkg_import_4__ = (__node_require__(9));
+var __bpkg_import_4__ = __node_require__(9);
 var SCOPE_TOP = __bpkg_import_4__.SCOPE_TOP;
 var SCOPE_FUNCTION = __bpkg_import_4__.SCOPE_FUNCTION;
 var SCOPE_ASYNC = __bpkg_import_4__.SCOPE_ASYNC;
@@ -700,11 +700,11 @@ var skipWhiteSpace = /(?:\s|\/\/.*|\/\*[^]*?\*\/)*/g;
 exports.skipWhiteSpace = skipWhiteSpace;
 }],
   [/* 6 */ '/src/options.js', function(exports, require, module, __filename, __dirname) {
-var __bpkg_import_0__ = (__node_require__(7));
+var __bpkg_import_0__ = __node_require__(7);
 var has = __bpkg_import_0__.has;
 var isArray = __bpkg_import_0__.isArray;
 
-var __bpkg_import_1__ = (__node_require__(8));
+var __bpkg_import_1__ = __node_require__(8);
 var SourceLocation = __bpkg_import_1__.SourceLocation;
 
 
@@ -859,7 +859,7 @@ var isArray = Array.isArray || ((obj) => (
 exports.isArray = isArray;
 }],
   [/* 8 */ '/src/locutil.js', function(exports, require, module, __filename, __dirname) {
-var __bpkg_import_0__ = (__node_require__(5));
+var __bpkg_import_0__ = __node_require__(5);
 var lineBreakG = __bpkg_import_0__.lineBreakG;
 
 
@@ -955,13 +955,13 @@ exports.BIND_OUTSIDE = BIND_OUTSIDE;
  // Special case for function names as bound inside the function
 }],
   [/* 10 */ '/src/parseutil.js', function(exports, require, module, __filename, __dirname) {
-var __bpkg_import_0__ = (__node_require__(4));
+var __bpkg_import_0__ = __node_require__(4);
 var tt = __bpkg_import_0__.types;
 
-var __bpkg_import_1__ = (__node_require__(2));
+var __bpkg_import_1__ = __node_require__(2);
 var Parser = __bpkg_import_1__.Parser;
 
-var __bpkg_import_2__ = (__node_require__(5));
+var __bpkg_import_2__ = __node_require__(5);
 var lineBreak = __bpkg_import_2__.lineBreak;
 var skipWhiteSpace = __bpkg_import_2__.skipWhiteSpace;
 
@@ -1104,28 +1104,28 @@ pp.isSimpleAssignTarget = function(expr) {
 }
 }],
   [/* 11 */ '/src/statement.js', function(exports, require, module, __filename, __dirname) {
-var __bpkg_import_0__ = (__node_require__(4));
+var __bpkg_import_0__ = __node_require__(4);
 var tt = __bpkg_import_0__.types;
 
-var __bpkg_import_1__ = (__node_require__(2));
+var __bpkg_import_1__ = __node_require__(2);
 var Parser = __bpkg_import_1__.Parser;
 
-var __bpkg_import_2__ = (__node_require__(5));
+var __bpkg_import_2__ = __node_require__(5);
 var lineBreak = __bpkg_import_2__.lineBreak;
 var skipWhiteSpace = __bpkg_import_2__.skipWhiteSpace;
 
-var __bpkg_import_3__ = (__node_require__(3));
+var __bpkg_import_3__ = __node_require__(3);
 var isIdentifierStart = __bpkg_import_3__.isIdentifierStart;
 var isIdentifierChar = __bpkg_import_3__.isIdentifierChar;
 var keywordRelationalOperator = __bpkg_import_3__.keywordRelationalOperator;
 
-var __bpkg_import_4__ = (__node_require__(7));
+var __bpkg_import_4__ = __node_require__(7);
 var has = __bpkg_import_4__.has;
 
-var __bpkg_import_5__ = (__node_require__(10));
+var __bpkg_import_5__ = __node_require__(10);
 var DestructuringErrors = __bpkg_import_5__.DestructuringErrors;
 
-var __bpkg_import_6__ = (__node_require__(9));
+var __bpkg_import_6__ = __node_require__(9);
 var functionFlags = __bpkg_import_6__.functionFlags;
 var SCOPE_SIMPLE_CATCH = __bpkg_import_6__.SCOPE_SIMPLE_CATCH;
 var BIND_SIMPLE_CATCH = __bpkg_import_6__.BIND_SIMPLE_CATCH;
@@ -1940,16 +1940,16 @@ pp.isDirectiveCandidate = function(statement) {
 }
 }],
   [/* 12 */ '/src/lval.js', function(exports, require, module, __filename, __dirname) {
-var __bpkg_import_0__ = (__node_require__(4));
+var __bpkg_import_0__ = __node_require__(4);
 var tt = __bpkg_import_0__.types;
 
-var __bpkg_import_1__ = (__node_require__(2));
+var __bpkg_import_1__ = __node_require__(2);
 var Parser = __bpkg_import_1__.Parser;
 
-var __bpkg_import_2__ = (__node_require__(7));
+var __bpkg_import_2__ = __node_require__(7);
 var has = __bpkg_import_2__.has;
 
-var __bpkg_import_3__ = (__node_require__(9));
+var __bpkg_import_3__ = __node_require__(9);
 var BIND_NONE = __bpkg_import_3__.BIND_NONE;
 var BIND_OUTSIDE = __bpkg_import_3__.BIND_OUTSIDE;
 
@@ -2206,19 +2206,19 @@ pp.checkLVal = function(expr, bindingType = BIND_NONE, checkClashes) {
 //
 // [opp]: http://en.wikipedia.org/wiki/Operator-precedence_parser
 
-var __bpkg_import_0__ = (__node_require__(4));
+var __bpkg_import_0__ = __node_require__(4);
 var tt = __bpkg_import_0__.types;
 
-var __bpkg_import_1__ = (__node_require__(2));
+var __bpkg_import_1__ = __node_require__(2);
 var Parser = __bpkg_import_1__.Parser;
 
-var __bpkg_import_2__ = (__node_require__(10));
+var __bpkg_import_2__ = __node_require__(10);
 var DestructuringErrors = __bpkg_import_2__.DestructuringErrors;
 
-var __bpkg_import_3__ = (__node_require__(5));
+var __bpkg_import_3__ = __node_require__(5);
 var lineBreak = __bpkg_import_3__.lineBreak;
 
-var __bpkg_import_4__ = (__node_require__(9));
+var __bpkg_import_4__ = __node_require__(9);
 var functionFlags = __bpkg_import_4__.functionFlags;
 var SCOPE_ARROW = __bpkg_import_4__.SCOPE_ARROW;
 var SCOPE_SUPER = __bpkg_import_4__.SCOPE_SUPER;
@@ -3108,10 +3108,10 @@ pp.parseAwait = function() {
 }
 }],
   [/* 14 */ '/src/location.js', function(exports, require, module, __filename, __dirname) {
-var __bpkg_import_0__ = (__node_require__(2));
+var __bpkg_import_0__ = __node_require__(2);
 var Parser = __bpkg_import_0__.Parser;
 
-var __bpkg_import_1__ = (__node_require__(8));
+var __bpkg_import_1__ = __node_require__(8);
 var Position = __bpkg_import_1__.Position;
 var getLineInfo = __bpkg_import_1__.getLineInfo;
 
@@ -3141,10 +3141,10 @@ pp.curPosition = function() {
 }
 }],
   [/* 15 */ '/src/scope.js', function(exports, require, module, __filename, __dirname) {
-var __bpkg_import_0__ = (__node_require__(2));
+var __bpkg_import_0__ = __node_require__(2);
 var Parser = __bpkg_import_0__.Parser;
 
-var __bpkg_import_1__ = (__node_require__(9));
+var __bpkg_import_1__ = __node_require__(9);
 var SCOPE_VAR = __bpkg_import_1__.SCOPE_VAR;
 var SCOPE_ARROW = __bpkg_import_1__.SCOPE_ARROW;
 var SCOPE_SIMPLE_CATCH = __bpkg_import_1__.SCOPE_SIMPLE_CATCH;
@@ -3219,10 +3219,10 @@ pp.currentThisScope = function() {
 }
 }],
   [/* 16 */ '/src/node.js', function(exports, require, module, __filename, __dirname) {
-var __bpkg_import_0__ = (__node_require__(2));
+var __bpkg_import_0__ = __node_require__(2);
 var Parser = __bpkg_import_0__.Parser;
 
-var __bpkg_import_1__ = (__node_require__(8));
+var __bpkg_import_1__ = __node_require__(8);
 var SourceLocation = __bpkg_import_1__.SourceLocation;
 
 
@@ -3282,13 +3282,13 @@ pp.finishNodeAt = function(node, type, pos, loc) {
 // given point in the program is loosely based on sweet.js' approach.
 // See https://github.com/mozilla/sweet.js/wiki/design
 
-var __bpkg_import_0__ = (__node_require__(2));
+var __bpkg_import_0__ = __node_require__(2);
 var Parser = __bpkg_import_0__.Parser;
 
-var __bpkg_import_1__ = (__node_require__(4));
+var __bpkg_import_1__ = __node_require__(4);
 var tt = __bpkg_import_1__.types;
 
-var __bpkg_import_2__ = (__node_require__(5));
+var __bpkg_import_2__ = __node_require__(5);
 var lineBreak = __bpkg_import_2__.lineBreak;
 
 
@@ -3440,24 +3440,24 @@ tt.name.updateContext = function(prevType) {
 }
 }],
   [/* 18 */ '/src/tokenize.js', function(exports, require, module, __filename, __dirname) {
-var __bpkg_import_0__ = (__node_require__(3));
+var __bpkg_import_0__ = __node_require__(3);
 var isIdentifierStart = __bpkg_import_0__.isIdentifierStart;
 var isIdentifierChar = __bpkg_import_0__.isIdentifierChar;
 
-var __bpkg_import_1__ = (__node_require__(4));
+var __bpkg_import_1__ = __node_require__(4);
 var tt = __bpkg_import_1__.types;
 var keywordTypes = __bpkg_import_1__.keywords;
 
-var __bpkg_import_2__ = (__node_require__(2));
+var __bpkg_import_2__ = __node_require__(2);
 var Parser = __bpkg_import_2__.Parser;
 
-var __bpkg_import_3__ = (__node_require__(8));
+var __bpkg_import_3__ = __node_require__(8);
 var SourceLocation = __bpkg_import_3__.SourceLocation;
 
-var __bpkg_import_4__ = (__node_require__(19));
+var __bpkg_import_4__ = __node_require__(19);
 var RegExpValidationState = __bpkg_import_4__.RegExpValidationState;
 
-var __bpkg_import_5__ = (__node_require__(5));
+var __bpkg_import_5__ = __node_require__(5);
 var lineBreak = __bpkg_import_5__.lineBreak;
 var lineBreakG = __bpkg_import_5__.lineBreakG;
 var isNewLine = __bpkg_import_5__.isNewLine;
@@ -4160,14 +4160,14 @@ pp.readWord = function() {
 }
 }],
   [/* 19 */ '/src/regexp.js', function(exports, require, module, __filename, __dirname) {
-var __bpkg_import_0__ = (__node_require__(3));
+var __bpkg_import_0__ = __node_require__(3);
 var isIdentifierStart = __bpkg_import_0__.isIdentifierStart;
 var isIdentifierChar = __bpkg_import_0__.isIdentifierChar;
 
-var __bpkg_import_1__ = (__node_require__(2));
+var __bpkg_import_1__ = __node_require__(2);
 var Parser = __bpkg_import_1__.Parser;
 
-var __bpkg_import_2__ = (__node_require__(20));
+var __bpkg_import_2__ = __node_require__(20);
 var UNICODE_PROPERTY_VALUES = __bpkg_import_2__._esModule
   ? __bpkg_import_2__.default
   : __bpkg_import_2__;
@@ -6098,7 +6098,7 @@ base.MethodDefinition = base.Property = (node, st, c) => {
   [/* 22 */ '/index.js', function(exports, require, module, __filename, __dirname) {
 "use strict"
 
-const acorn = (__node_require__(1))
+const acorn = __node_require__(1)
 const tt = acorn.tokTypes
 const isIdentifierStart = acorn.isIdentifierStart
 
@@ -6155,7 +6155,7 @@ module.exports = function(Parser) {
 
 const skipWhiteSpace = /(?:\s|\/\/.*|\/\*[^]*?\*\/)*/g
 
-const acorn = (__node_require__(1))
+const acorn = __node_require__(1)
 const tt = acorn.tokTypes
 
 module.exports = function(Parser) {
@@ -6187,7 +6187,7 @@ module.exports = function(Parser) {
   [/* 24 */ '/index.js', function(exports, require, module, __filename, __dirname) {
 "use strict"
 
-const acorn = (__node_require__(1))
+const acorn = __node_require__(1)
 const tt = acorn.tokTypes
 
 const skipWhiteSpace = /(?:\s|\/\/.*|\/\*[^]*?\*\/)*/g
@@ -6235,7 +6235,7 @@ module.exports = function(Parser) {
 }],
   [/* 25 */ '/src/index.js', function(exports, require, module, __filename, __dirname) {
 /* eslint-disable no-underscore-dangle */
-var __bpkg_import_0__ = (__node_require__(1));
+var __bpkg_import_0__ = __node_require__(1);
 var tt = __bpkg_import_0__.tokTypes;
 
 
@@ -6292,9 +6292,21 @@ if ((__bpkg_default_1__ && typeof __bpkg_default_1__ === "object")
 }]
 ];
 
-var __node_cache__ = Object.create(null);
+var __node_cache__ = [];
+
+function __node_error__(location) {
+  var err = new Error('Cannot find module \'' + location + '\'');
+  err.code = 'MODULE_NOT_FOUND';
+  throw err;
+}
 
 function __node_require__(id) {
+  if ((id >>> 0) !== id || id > __node_modules__.length)
+    return __node_error__(id);
+
+  while (__node_cache__.length <= id)
+    __node_cache__.push(null);
+
   var cache = __node_cache__[id];
 
   if (cache)
@@ -6314,20 +6326,26 @@ function __node_require__(id) {
       exports: _exports,
       parent: module,
       filename: __filename,
+      loaded: false,
       children: [],
-      paths: module.paths
+      paths: module.paths.slice(),
+      require: module.require.bind(module)
     };
   }
 
   __node_cache__[id] = _module;
 
-  func.call(_exports, _exports, require, _module, __filename, __dirname);
+  try {
+    func.call(_exports, _exports, require, _module, __filename, __dirname);
+  } catch (e) {
+    delete __node_cache__[id];
+    throw e;
+  }
+
+  if (id !== 0)
+    _module.loaded = true;
 
   return _module.exports;
-}
-
-function __node_error__(msg) {
-  throw new Error(msg);
 }
 
 __node_require__(0);

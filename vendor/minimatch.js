@@ -95,11 +95,11 @@ minimatch.Minimatch = Minimatch
 
 var path = { sep: '/' }
 try {
-  path = (require('path'))
+  path = require('path')
 } catch (er) {}
 
 var GLOBSTAR = minimatch.GLOBSTAR = Minimatch.GLOBSTAR = {}
-var expand = (__node_require__(1))
+var expand = __node_require__(1)
 
 var plTypes = {
   '!': { open: '(?:(?!(?:', close: '))[^/]*?)'},
@@ -1015,8 +1015,8 @@ function regExpEscape (s) {
 }
 }],
   [/* 1 */ '/index.js', function(exports, require, module, __filename, __dirname) {
-var concatMap = (__node_require__(2));
-var balanced = (__node_require__(3));
+var concatMap = __node_require__(2);
+var balanced = __node_require__(3);
 
 module.exports = expandTop;
 
@@ -1294,9 +1294,21 @@ function range(a, b, str) {
 }]
 ];
 
-var __node_cache__ = Object.create(null);
+var __node_cache__ = [];
+
+function __node_error__(location) {
+  var err = new Error('Cannot find module \'' + location + '\'');
+  err.code = 'MODULE_NOT_FOUND';
+  throw err;
+}
 
 function __node_require__(id) {
+  if ((id >>> 0) !== id || id > __node_modules__.length)
+    return __node_error__(id);
+
+  while (__node_cache__.length <= id)
+    __node_cache__.push(null);
+
   var cache = __node_cache__[id];
 
   if (cache)
@@ -1316,20 +1328,26 @@ function __node_require__(id) {
       exports: _exports,
       parent: module,
       filename: __filename,
+      loaded: false,
       children: [],
-      paths: module.paths
+      paths: module.paths.slice(),
+      require: module.require.bind(module)
     };
   }
 
   __node_cache__[id] = _module;
 
-  func.call(_exports, _exports, require, _module, __filename, __dirname);
+  try {
+    func.call(_exports, _exports, require, _module, __filename, __dirname);
+  } catch (e) {
+    delete __node_cache__[id];
+    throw e;
+  }
+
+  if (id !== 0)
+    _module.loaded = true;
 
   return _module.exports;
-}
-
-function __node_error__(msg) {
-  throw new Error(msg);
 }
 
 __node_require__(0);

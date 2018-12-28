@@ -10,7 +10,7 @@
 
 const assert = require('assert');
 const bpkg = require('../');
-const {argv, stdout, stderr, exit} = process;
+const {argv, stdin, stdout, stderr, exit} = process;
 
 /*
  * Constants
@@ -87,12 +87,73 @@ function getArgs(argv) {
   return args;
 }
 
-function parseArgs() {
+async function readInput() {
+  if (stdin.isTTY)
+    return null;
+
+  const out = [];
+
+  let total = 0;
+
+  return new Promise((resolve, reject) => {
+    let onData, onError, onEnd;
+
+    const cleanup = () => {
+      stdin.removeListener('data', onData);
+      stdin.removeListener('error', onError);
+      stdin.removeListener('end', onEnd);
+    };
+
+    onData = (data) => {
+      if (total > (100 << 20)) {
+        onError(new Error('Too much code buffered.'));
+        return;
+      }
+
+      total += data.length;
+      out.push(data);
+    };
+
+    onError = (err) => {
+      cleanup();
+
+      try {
+        stdin.destroy();
+      } catch (e) {
+        ;
+      }
+
+      reject(err);
+    };
+
+    onEnd = () => {
+      cleanup();
+
+      if (total > 0)
+        resolve(Buffer.concat(out));
+      else
+        resolve(null);
+    };
+
+    stdin.on('data', onData);
+    stdin.on('error', onError);
+    stdin.on('end', onEnd);
+
+    try {
+      stdin.resume();
+    } catch (e) {
+      reject(e);
+    }
+  });
+}
+
+async function parseArgs() {
   const options = {
     __proto__: null,
     stream: stdout,
     input: null,
     output: null,
+    code: await readInput(),
     env: 'node',
     extensions: ['.js', '.mjs'],
     browserField: false,
@@ -305,7 +366,7 @@ function parseArgs() {
   let options;
 
   try {
-    options = parseArgs();
+    options = await parseArgs();
   } catch (e) {
     stderr.write(e.message + '\n');
     return 1;

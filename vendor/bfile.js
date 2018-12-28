@@ -306,7 +306,7 @@ exports.copy = async function copy(src, dest, flags, filter) {
       await exports.unlink(dest);
     }
 
-    await exports.symlink(dest, await exports.readlink(src));
+    await exports.symlink(await exports.readlink(src), dest);
 
     return ret;
   }
@@ -405,7 +405,7 @@ exports.copySync = function copySync(src, dest, flags, filter) {
       exports.unlinkSync(dest);
     }
 
-    exports.symlinkSync(dest, exports.readlinkSync(src));
+    exports.symlinkSync(exports.readlinkSync(src), dest);
 
     return ret;
   }

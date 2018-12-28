@@ -9,8 +9,7 @@
 'use strict';
 
 const assert = require('assert');
-const os = require('os');
-const {Bundler} = require('../');
+const bpkg = require('../');
 const {argv, stdout, stderr, exit} = process;
 
 /*
@@ -25,6 +24,7 @@ const HELP = `
   Options:
 
     -v, --version           output the version number
+    -o, --output <file>     output file or directory (default: stdout)
     -e, --env <name>        set environment, node or browser (default: node)
     -n, --node              set environment to node
     -b, --browser           set environment to browser
@@ -41,8 +41,7 @@ const HELP = `
     --global                expose globally for browser bundles
     --name <name>           name to use for global exposure (default: pkg.name)
     -p, --plugins <a,b,..>  comma separated list of plugins
-    -t, --tmp <path>        path to temporary directory (default: os.tmpdir())
-    -o, --output <file>     output file or directory (default: stdout)
+    --tar <file>            path to tar
     -h, --help              output usage information
 `;
 
@@ -91,6 +90,9 @@ function getArgs(argv) {
 function parseArgs() {
   const options = {
     __proto__: null,
+    stream: stdout,
+    input: null,
+    output: null,
     env: 'node',
     extensions: ['.js', '.mjs'],
     browserField: false,
@@ -105,9 +107,7 @@ function parseArgs() {
     global: false,
     name: null,
     plugins: [],
-    tmp: os.tmpdir(),
-    output: null,
-    file: null
+    tar: process.env.BPKG_TAR || 'tar'
   };
 
   const args = getArgs(argv);
@@ -125,6 +125,18 @@ function parseArgs() {
       case '--version': {
         stdout.write(VERSION + '\n');
         exit(0);
+        break;
+      }
+
+      case '-o':
+      case '--output': {
+        if (!next || next[0] === '-')
+          throw new Error(`Invalid option for: ${arg}.`);
+
+        options.output = next;
+
+        i += 1;
+
         break;
       }
 
@@ -244,24 +256,11 @@ function parseArgs() {
         break;
       }
 
-      case '-t':
-      case '--tmp': {
+      case '--tar': {
         if (!next || next[0] === '-')
           throw new Error(`Invalid option for: ${arg}.`);
 
-        options.tmp = next;
-
-        i += 1;
-
-        break;
-      }
-
-      case '-o':
-      case '--output': {
-        if (!next || next[0] === '-')
-          throw new Error(`Invalid option for: ${arg}.`);
-
-        options.output = next;
+        options.tar = next;
 
         i += 1;
 
@@ -279,18 +278,18 @@ function parseArgs() {
         if (arg.length === 0 || arg[0] === '-')
           throw new Error(`Invalid argument: ${arg}.`);
 
-        if (options.file)
+        if (options.input)
           options.output = arg;
         else
-          options.file = arg;
+          options.input = arg;
 
         break;
       }
     }
   }
 
-  if (!options.file)
-    options.file = '.';
+  if (!options.input)
+    options.input = '.';
 
   return options;
 }
@@ -305,19 +304,12 @@ function parseArgs() {
     return 1;
   }
 
-  const {file, output} = options;
-  const bundler = new Bundler(options);
-  const code = await bundler.bundle(file, output);
-
-  if (code)
-    stdout.write(code);
+  await bpkg(options);
 
   return 0;
 })().then((code) => {
-  if (code !== -1) {
-    process.exitCode = code;
-    process.on('exit', () => exit(code));
-  }
+  process.exitCode = code;
+  process.on('exit', () => exit(code));
 }).catch((err) => {
   stderr.write(err.stack + '\n');
   exit(1);

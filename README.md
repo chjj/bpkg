@@ -16,6 +16,7 @@ $ bpkg -h
   Options:
 
     -v, --version           output the version number
+    -o, --output <file>     output file or directory (default: stdout)
     -e, --env <name>        set environment, node or browser (default: node)
     -n, --node              set environment to node
     -b, --browser           set environment to browser
@@ -32,8 +33,7 @@ $ bpkg -h
     --global                expose globally for browser bundles
     --name <name>           name to use for global exposure (default: pkg.name)
     -p, --plugins <a,b,..>  comma separated list of plugins
-    -t, --tmp <path>        path to temporary directory (default: os.tmpdir())
-    -o, --output <file>     output file or directory (default: stdout)
+    --tar <file>            path to tar
     -h, --help              output usage information
 ```
 
@@ -162,12 +162,20 @@ $ bpkg --plugins ./my-plugin . bundle.js
 ``` js
 'use strict';
 
+const assert = require('assert');
+
 class MyPlugin {
   constructor(bundle, options) {
-    bundle.src; // Source entry point.
-    bundle.dest; // Output file/directory.
+    bundle.input; // Source entry point.
+    bundle.output; // Output file/directory.
     bundle.root; // Main package root.
     bundle.resolve; // Module resolver (async)
+  }
+
+  // Called asynchronously
+  // on initialization.
+  async open() {
+    return;
   }
 
   // Called when code is first loaded
@@ -176,6 +184,9 @@ class MyPlugin {
   // compiler to hook into (typescript,
   // for example).
   async compile(module, code) {
+    // `compile` is unique in that it
+    // accepts and returns a Buffer object.
+    assert(Buffer.isBuffer(code));
     module.path; // Filename path.
     module.root; // Package root.
     module.resolve; // Module resolver (async).
@@ -185,6 +196,7 @@ class MyPlugin {
   // Called post-compilation and
   // after default transformation.
   async transform(module, code) {
+    assert(typeof code === 'string');
     return code;
   }
 
@@ -192,13 +204,18 @@ class MyPlugin {
   // created (good place for a minifier,
   // for example).
   async final(code) {
+    assert(typeof code === 'string');
     return code;
+  }
+
+  // Called once the bundle is built.
+  // Cleanup logic goes here.
+  async close() {
+    return;
   }
 }
 
-module.exports = async (bundler, options) => {
-  return new MyPlugin(bundler, options);
-};
+module.exports = MyPlugin;
 ```
 
 Passing options can be done directly through the JS api for now:
@@ -206,17 +223,17 @@ Passing options can be done directly through the JS api for now:
 ./build.js:
 
 ``` js
-const {Bundler} = require('bpkg');
-
-const bundler = new Bundler({
+require('bpkg')({
+  input: '.',
+  output: 'bundle.js',
   extensions: ['.js', '.mjs'],
-  plugins: [require('./my-plugin'), {
-    foo: 1,
-    bar: 2
-  }]
+  plugins: [
+    [require('./my-plugin'), {
+      foo: 1,
+      bar: 2
+    }]
+  ]
 });
-
-bundler.bundle('.', 'bundle.js');
 ```
 
 ## Contribution and License Agreement

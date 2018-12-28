@@ -88,9 +88,6 @@ function getArgs(argv) {
 }
 
 async function readInput() {
-  if (stdin.isTTY)
-    return null;
-
   const out = [];
 
   let total = 0;
@@ -128,11 +125,7 @@ async function readInput() {
 
     onEnd = () => {
       cleanup();
-
-      if (total > 0)
-        resolve(Buffer.concat(out));
-      else
-        resolve(null);
+      resolve(Buffer.concat(out));
     };
 
     stdin.on('data', onData);
@@ -153,7 +146,7 @@ async function parseArgs() {
     stream: stdout,
     input: null,
     output: null,
-    code: await readInput(),
+    code: null,
     env: 'node',
     extensions: ['.js', '.mjs'],
     browserField: false,
@@ -343,6 +336,14 @@ async function parseArgs() {
       }
 
       default: {
+        if (arg === '-') {
+          if (options.input)
+            options.output = null;
+          else
+            options.code = await readInput();
+          break;
+        }
+
         if (arg.length === 0 || arg[0] === '-')
           throw new Error(`Invalid argument: ${arg}.`);
 

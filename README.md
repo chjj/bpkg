@@ -15,26 +15,28 @@ $ bpkg -h
 
   Options:
 
-    -v, --version           output the version number
-    -o, --output <file>     output file or directory (default: stdout)
-    -e, --env <name>        set environment, node or browser (default: node)
-    -n, --node              set environment to node
-    -b, --browser           set environment to browser
-    --extensions <a,b,..>   list of extensions (default: .js,.mjs,.json,.node)
-    -f, --browser-field     force usage of package.json "browser" field
-    -i, --ignore-missing    ignore missing modules during compilation
-    -c, --collect-bindings  include bindings separately
-    -x, --exclude-source    exclude c++ source in multi mode
-    -l, --no-license        do not place licenses at the top of the bundle
-    -m, --multi             output module as multiple files
-    -s, --single            build a single file without transpiling modules
-    -u, --minify            minify bundle or files (using uglify-es)
-    --exports               expose on module.exports for browser bundles
-    --global                expose globally for browser bundles
-    --name <name>           name to use for global exposure (default: pkg.name)
-    -p, --plugins <a,b,..>  comma separated list of plugins
-    --tar <file>            path to tar
-    -h, --help              output usage information
+    -v, --version            output the version number
+    -o, --output <file>      output file or directory (default: stdout)
+    -e, --env <name>         set environment, node or browser (default: node)
+    -n, --node               set environment to node
+    -b, --browser            set environment to browser
+    --extensions <a,b,..>    list of extensions (default: .js,.mjs,.json,.node)
+    -f, --browser-field      force usage of package.json "browser" field
+    -i, --ignore-missing     ignore missing modules during compilation
+    -c, --collect-bindings   include bindings separately
+    -x, --exclude-source     exclude c++ source in multi mode
+    -l, --no-license         do not place licenses at the top of the bundle
+    -m, --multi              output module as multiple files
+    -s, --single             build a single file without transpiling modules
+    --exports                expose on module.exports for browser bundles
+    --global                 expose globally for browser bundles
+    --name <name>            name to use for global exposure (default: pkg.name)
+    -p, --plugin <plugin>   use plugin
+    -r, --requires <a,b,..>  comma-separated list of requires
+    --environment <k=v,..>   key-value pairs for process.env
+    --globals <k=v,..>       key-value pairs for global
+    --tar <file>             path to tar executable
+    -h, --help               output usage information
 ```
 
 ## Features
@@ -43,7 +45,7 @@ $ bpkg -h
 - Node.js native module support for bundles
 - Full browser support
 - ES modules
-- Uglify-ES support included
+- Babel, TypeScript, and Uglify-JS support out of the box
 
 ## Why?
 
@@ -118,10 +120,9 @@ bcrypto/lib/aead.js
 ...
 ```
 
-The above will _flatten_ the dependency tree into one node_modules directory
-below `bcrypto`. Only what is needed to run the library will be included
-(READMEs, for example, are excluded). With the --collect-bindings option, all
-native bindings will be built and included in the tarball.
+The above will deduplicate and include the dependency tree in a
+`node_modules` directory below `bcrypto`. With the --collect-bindings option,
+all native bindings will be built and included in the tarball.
 
 This is extremely useful for packaging your project for something _other_ than
 NPM (an OS package manager, for example).
@@ -148,13 +149,21 @@ To expose globally:
 $ bpkg --browser --global --name=bcrypto ./node_modules/bcrypto bcrypto.js
 ```
 
+Plugins & requires:
+
+``` bash
+$ bpkg --plugin [ babel --presets [ @babel/env ] ] --requires @babel/polyfill \
+  --browser --global --name=bcrypto ./node_modules/bcrypto bcrypto.js
+```
+
 ## Plugins
 
 Unfortunately, bpkg is not compatible with any existing plugins.
 However, it presents a very simple plugin API:
 
 ``` bash
-$ bpkg --plugins ./my-plugin . bundle.js
+$ bpkg --plugin ./my-plugin . bundle.js
+$ bpkg --plugin [ ./my-plugin --foo=bar ] . bundle.js
 ```
 
 ./my-plugin.js:
@@ -170,12 +179,25 @@ class MyPlugin {
     bundle.output; // Output file/directory.
     bundle.root; // Main package root.
     bundle.resolve; // Module resolver (async)
+    options; // Options passed from the commandline (or directly).
   }
 
-  // Called asynchronously
-  // on initialization.
-  async open() {
-    return;
+  // Called before initialization.
+  // The root package/module is not yet loaded.
+  // Mostly for altering bundle options.
+  async load() {
+    // This is a good place to add extensions
+    // for the module resolver. Example:
+    // this.bundle.addExtension('.ts');
+  }
+
+  // Called asynchronously on initialization.
+  async open(pkg) {
+    // This is a good place to load some
+    // modules. Modules will be resolved
+    // relative to the package root.
+    // Example:
+    // this.ts = await this.bundle.require('typescript');
   }
 
   // Called when code is first loaded
@@ -203,14 +225,22 @@ class MyPlugin {
   // Called once the bundle is fully
   // created (good place for a minifier,
   // for example).
-  async final(code) {
+  async final(module, code) {
     assert(typeof code === 'string');
     return code;
   }
 
+  // Only called in multi mode, allows
+  // you to "rewrite" the output filename.
+  async rewrite(module, path) {
+    // Example:
+    // return path.replace(/\.ts$/, '.js');
+    return path;
+  }
+
   // Called once the bundle is built.
   // Cleanup logic goes here.
-  async close() {
+  async close(pkg) {
     return;
   }
 }
@@ -218,12 +248,14 @@ class MyPlugin {
 module.exports = MyPlugin;
 ```
 
-Passing options can be done directly through the JS api for now:
+Passing options can be done directly through the JS api as well as the command
+line:
 
 ./build.js:
 
 ``` js
 require('bpkg')({
+  env: 'browser',
   input: '.',
   output: 'bundle.js',
   extensions: ['.js', '.mjs'],
@@ -234,6 +266,15 @@ require('bpkg')({
     }]
   ]
 });
+```
+
+## Browserify Transforms
+
+A browserify compatibility plugin exists. It currently only supports browserify
+transforms:
+
+``` bash
+$ bpkg -p [ browserify -t [ babelify ] ]
 ```
 
 ## Contribution and License Agreement

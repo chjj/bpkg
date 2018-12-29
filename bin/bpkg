@@ -23,26 +23,28 @@ const HELP = `
 
   Options:
 
-    -v, --version           output the version number
-    -o, --output <file>     output file or directory (default: stdout)
-    -e, --env <name>        set environment, node or browser (default: node)
-    -n, --node              set environment to node
-    -b, --browser           set environment to browser
-    --extensions <a,b,..>   list of extensions (default: .js,.mjs,.json,.node)
-    -f, --browser-field     force usage of package.json "browser" field
-    -i, --ignore-missing    ignore missing modules during compilation
-    -c, --collect-bindings  include bindings separately
-    -x, --exclude-source    exclude c++ source in multi mode
-    -l, --no-license        do not place licenses at the top of the bundle
-    -m, --multi             output module as multiple files
-    -s, --single            build a single file without transpiling modules
-    -u, --minify            minify bundle or files (using uglify-es)
-    --exports               expose on module.exports for browser bundles
-    --global                expose globally for browser bundles
-    --name <name>           name to use for global exposure (default: pkg.name)
-    -p, --plugins <a,b,..>  comma separated list of plugins
-    --tar <file>            path to tar
-    -h, --help              output usage information
+    -v, --version            output the version number
+    -o, --output <file>      output file or directory (default: stdout)
+    -e, --env <name>         set environment, node or browser (default: node)
+    -n, --node               set environment to node
+    -b, --browser            set environment to browser
+    --extensions <a,b,..>    list of extensions (default: .js,.mjs,.json,.node)
+    -f, --browser-field      force usage of package.json "browser" field
+    -i, --ignore-missing     ignore missing modules during compilation
+    -c, --collect-bindings   include bindings separately
+    -x, --exclude-source     exclude c++ source in multi mode
+    -l, --no-license         do not place licenses at the top of the bundle
+    -m, --multi              output module as multiple files
+    -s, --single             build a single file without transpiling modules
+    --exports                expose on module.exports for browser bundles
+    --global                 expose globally for browser bundles
+    --name <name>            name to use for global exposure (default: pkg.name)
+    -p, --plugin <plugin>    use plugin
+    -r, --requires <a,b,..>  comma-separated list of requires
+    --environment <k=v,..>   key-value pairs for process.env
+    --globals <k=v,..>       key-value pairs for global
+    --tar <file>             path to tar executable
+    -h, --help               output usage information
 `;
 
 /*
@@ -156,11 +158,12 @@ async function parseArgs() {
     noLicense: false,
     multi: false,
     single: false,
-    minify: false,
     exports: false,
     global: false,
     name: null,
     plugins: [],
+    environment: Object.create(null),
+    globals: Object.create(null),
     requires: [],
     tar: process.env.BPKG_TAR || 'tar',
     verbose: false
@@ -273,12 +276,6 @@ async function parseArgs() {
         break;
       }
 
-      case '-u':
-      case '--minify': {
-        options.minify = true;
-        break;
-      }
-
       case '--exports': {
         options.exports = true;
         break;
@@ -301,11 +298,11 @@ async function parseArgs() {
       }
 
       case '-p':
-      case '--plugins': {
+      case '--plugin': {
         if (!next || next[0] === '-')
           throw new Error(`Invalid option for: ${arg}.`);
 
-        let opt = Object.create(null);
+        let pluginOptions = Object.create(null);
 
         i += 1;
 
@@ -336,10 +333,40 @@ async function parseArgs() {
           if (!next || next[0] === '-')
             throw new Error(`Invalid option for: ${arg}.`);
 
-          opt = parseNested(argv);
+          pluginOptions = parseNested(argv);
         }
 
-        options.plugins.push([next, opt]);
+        options.plugins.push([next, pluginOptions]);
+
+        break;
+      }
+
+      case '--globals':
+      case '--environment': {
+        if (!next || next[0] === '-')
+          throw new Error(`Invalid option for: ${arg}.`);
+
+        const target = arg === '--globals'
+          ? options.globals
+          : options.environment;
+
+        const pairs = next.split(',');
+
+        for (const pair of pairs) {
+          const index = pair.indexOf('=');
+
+          if (index === -1) {
+            target[pair] = true;
+            continue;
+          }
+
+          const key = pair.substring(0, index);
+          const value = pair.substring(index + 1);
+
+          target[key] = value;
+        }
+
+        i += 1;
 
         break;
       }
@@ -414,16 +441,16 @@ function parseNested(args) {
   const stack = [];
 
   let options = Object.create(null);
-  let files = [];
+  let list = [];
   let name = null;
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
 
     if (arg === '[') {
-      stack.push([options, files, name]);
+      stack.push([options, list, name]);
       options = Object.create(null);
-      files = [];
+      list = [];
       name = null;
       continue;
     }
@@ -433,13 +460,13 @@ function parseNested(args) {
         throw new Error('Invalid argument: "]".');
 
       if (name)
-        setProperty(options, files, name);
+        setProperty(options, list, name);
 
-      const value = normalizeObject(options, files);
+      const value = normalizeObject(options, list);
 
-      [options, files, name] = stack.pop();
+      [options, list, name] = stack.pop();
 
-      setProperty(options, files, name, value);
+      setProperty(options, list, name, value);
       name = null;
 
       continue;
@@ -447,7 +474,7 @@ function parseNested(args) {
 
     if (arg.startsWith('--')) {
       if (name)
-        setProperty(options, files, name);
+        setProperty(options, list, name);
 
       name = arg.substring(2);
 
@@ -456,36 +483,36 @@ function parseNested(args) {
 
     if (arg.startsWith('-')) {
       if (name)
-        setProperty(options, files, name);
+        setProperty(options, list, name);
 
       name = arg.substring(1);
 
       continue;
     }
 
-    setProperty(options, files, name, arg);
+    setProperty(options, list, name, arg);
     name = null;
   }
 
   if (stack.length > 0)
-    throw new Error('Invalid argument: "["');
+    throw new Error('Invalid argument: "[".');
 
   if (name)
-    setProperty(options, files, name);
+    setProperty(options, list, name);
 
   defineProperty(options, '$', args);
-  defineProperty(options, '_', files);
+  defineProperty(options, '_', list);
 
   return options;
 }
 
-function setProperty(obj, files, name, value = null) {
+function setProperty(obj, list, name, value = null) {
   assert(obj && typeof obj === 'object');
-  assert(Array.isArray(files));
+  assert(Array.isArray(list));
   assert(name == null || typeof name === 'string');
 
   if (!name) {
-    files.push(value);
+    list.push(value);
     return;
   }
 
@@ -521,17 +548,17 @@ function defineProperty(obj, key, value) {
   });
 };
 
-function normalizeObject(obj, files) {
+function normalizeObject(obj, list) {
   assert(obj && typeof obj === 'object');
-  assert(Array.isArray(files));
+  assert(Array.isArray(list));
 
   if (Object.keys(obj).length === 0)
-    return files;
+    return list;
 
-  if (files.length === 0)
+  if (list.length === 0)
     return obj;
 
-  defineProperty(obj, '_', files);
+  defineProperty(obj, '_', list);
 
   return obj;
 }

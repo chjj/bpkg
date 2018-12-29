@@ -161,6 +161,7 @@ async function parseArgs() {
     global: false,
     name: null,
     plugins: [],
+    requires: [],
     tar: process.env.BPKG_TAR || 'tar',
     verbose: false
   };
@@ -304,7 +305,51 @@ async function parseArgs() {
         if (!next || next[0] === '-')
           throw new Error(`Invalid option for: ${arg}.`);
 
-        options.plugins.push(...next.split(','));
+        let opt = Object.create(null);
+
+        i += 1;
+
+        if (next === '[') {
+          let depth = 0;
+          let argv = [];
+
+          for (; i < args.length; i++) {
+            const arg = args[i];
+
+            argv.push(arg);
+
+            if (arg === '[') {
+              depth += 1;
+            } else if (arg === ']') {
+              depth -= 1;
+              if (depth === 0)
+                break;
+            }
+          }
+
+          if (depth !== 0)
+            throw new Error('Invalid argument: "[".');
+
+          argv = argv.slice(1, -1);
+          next = argv.shift();
+
+          if (!next || next[0] === '-')
+            throw new Error(`Invalid option for: ${arg}.`);
+
+          opt = parseNested(argv);
+        }
+
+        options.plugins.push([next, opt]);
+
+        break;
+      }
+
+      case '-r':
+      case '--requires': {
+        if (!next || next[0] === '-')
+          throw new Error(`Invalid option for: ${arg}.`);
+
+        options.requires.push(...next.split(','));
 
         i += 1;
 
@@ -361,6 +406,134 @@ async function parseArgs() {
     options.input = '.';
 
   return options;
+}
+
+function parseNested(args) {
+  assert(Array.isArray(args));
+
+  const stack = [];
+
+  let options = Object.create(null);
+  let files = [];
+  let name = null;
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+
+    if (arg === '[') {
+      stack.push([options, files, name]);
+      options = Object.create(null);
+      files = [];
+      name = null;
+      continue;
+    }
+
+    if (arg === ']') {
+      if (stack.length === 0)
+        throw new Error('Invalid argument: "]".');
+
+      if (name)
+        setProperty(options, files, name);
+
+      const value = normalizeObject(options, files);
+
+      [options, files, name] = stack.pop();
+
+      setProperty(options, files, name, value);
+      name = null;
+
+      continue;
+    }
+
+    if (arg.startsWith('--')) {
+      if (name)
+        setProperty(options, files, name);
+
+      name = arg.substring(2);
+
+      continue;
+    }
+
+    if (arg.startsWith('-')) {
+      if (name)
+        setProperty(options, files, name);
+
+      name = arg.substring(1);
+
+      continue;
+    }
+
+    setProperty(options, files, name, arg);
+    name = null;
+  }
+
+  if (stack.length > 0)
+    throw new Error('Invalid argument: "["');
+
+  if (name)
+    setProperty(options, files, name);
+
+  defineProperty(options, '$', args);
+  defineProperty(options, '_', files);
+
+  return options;
+}
+
+function setProperty(obj, files, name, value = null) {
+  assert(obj && typeof obj === 'object');
+  assert(Array.isArray(files));
+  assert(name == null || typeof name === 'string');
+
+  if (!name) {
+    files.push(value);
+    return;
+  }
+
+  const parts = name.split('.');
+  const last = parts[parts.length - 1];
+
+  for (let i = 0; i < parts.length - 1; i++) {
+    const name = parts[i];
+
+    if (!obj[name])
+      obj[name] = Object.create(null);
+
+    obj = obj[name];
+  }
+
+  if (value != null)
+    obj[last] = value;
+  else if (last.startsWith('no-'))
+    obj[last.substring(3)] = false;
+  else
+    obj[last] = true;
+}
+
+function defineProperty(obj, key, value) {
+  assert(obj && typeof obj === 'object');
+  assert(typeof key === 'string');
+
+  Object.defineProperty(obj, key, {
+    configurable: true,
+    enumerable: false,
+    writable: true,
+    value
+  });
+};
+
+function normalizeObject(obj, files) {
+  assert(obj && typeof obj === 'object');
+  assert(Array.isArray(files));
+
+  if (Object.keys(obj).length === 0)
+    return files;
+
+  if (files.length === 0)
+    return obj;
+
+  defineProperty(obj, '_', files);
+
+  return obj;
 }
 
 (async () => {

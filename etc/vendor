@@ -34,8 +34,9 @@ const modules = [
   ['vm-browserify', 'lib/builtins/vm.js'],
   ['browserify-zlib', 'lib/builtins/zlib.js'],
   ['./acorn-wrap', 'vendor/acorn.js'],
+  ['bfile', 'vendor/bfile.js'],
   ['minimatch', 'vendor/minimatch.js'],
-  ['bfile', 'vendor/bfile.js']
+  ['tar', 'vendor/tar.js']
 ];
 
 function resolveModule(name) {

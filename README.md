@@ -35,7 +35,6 @@ $ bpkg -h
     -r, --requires <a,b,..>  comma-separated list of requires
     --environment <k=v,..>   key-value pairs for process.env
     --globals <k=v,..>       key-value pairs for global
-    --tar <file>             path to tar executable
     -h, --help               output usage information
 ```
 

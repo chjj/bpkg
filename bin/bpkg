@@ -43,7 +43,6 @@ const HELP = `
     -r, --requires <a,b,..>  comma-separated list of requires
     --environment <k=v,..>   key-value pairs for process.env
     --globals <k=v,..>       key-value pairs for global
-    --tar <file>             path to tar executable
     -h, --help               output usage information
 `;
 
@@ -165,7 +164,6 @@ async function parseArgs() {
     environment: Object.create(null),
     globals: Object.create(null),
     requires: [],
-    tar: process.env.BPKG_TAR || 'tar',
     verbose: false
   };
 
@@ -377,17 +375,6 @@ async function parseArgs() {
           throw new Error(`Invalid option for: ${arg}.`);
 
         options.requires.push(...next.split(','));
-
-        i += 1;
-
-        break;
-      }
-
-      case '--tar': {
-        if (!next || next[0] === '-')
-          throw new Error(`Invalid option for: ${arg}.`);
-
-        options.tar = next;
 
         i += 1;
 

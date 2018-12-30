@@ -155,6 +155,14 @@ $ bpkg --plugin [ babel --presets [ @babel/env ] ] --requires @babel/polyfill \
   --browser --global --name=bcrypto ./node_modules/bcrypto bcrypto.js
 ```
 
+``` bash
+$ bpkg -b -p [ uglify-es --toplevel ] ./bcrypto bcrypto.js
+```
+
+``` bash
+$ bpkg -b -p typescript my-script.ts my-script.js
+```
+
 ## Plugins
 
 Unfortunately, bpkg is not compatible with any existing plugins.

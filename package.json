@@ -16,7 +16,7 @@
     "bpkg": "./bin/bpkg"
   },
   "scripts": {
-    "lint": "eslint bin/* lib/*.js lib/templates || exit 0",
+    "lint": "eslint bin/* lib/*.js lib/templates etc/vendor || exit 0",
     "test": "bmocha --reporter spec test/*-test.js"
   },
   "devDependencies": {

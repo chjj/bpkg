@@ -1,0 +1,13 @@
+{
+  "name": "acorn-wrap",
+  "version": "0.0.0",
+  "main": "./index.js",
+  "dependencies": {
+    "acorn": "latest",
+    "acorn-walk": "latest",
+    "acorn-bigint": "latest",
+    "acorn-export-ns-from": "latest",
+    "acorn-dynamic-import": "latest",
+    "acorn-import-meta": "latest"
+  }
+}

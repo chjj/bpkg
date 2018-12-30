@@ -1,0 +1,205 @@
+#!/usr/bin/env node
+
+'use strict';
+
+const assert = require('assert');
+const constants = require('constants');
+const fs = require('fs');
+const {dirname, resolve} = require('path');
+const bpkg = require('../lib/bpkg');
+
+const ROOT = resolve(__dirname, '..');
+
+const modules = [
+  ['assert/', 'lib/builtins/assert.js'],
+  ['buffer/', 'lib/builtins/buffer.js'],
+  ['console-browserify', 'lib/builtins/console.js'],
+  // ['constants-browserify', 'lib/builtins/constants.js'],
+  ['crypto-browserify', 'lib/builtins/crypto.js'],
+  ['domain-browser', 'lib/builtins/domain.js'],
+  ['events/', 'lib/builtins/events.js'],
+  ['stream-http', 'lib/builtins/http.js'],
+  ['https-browserify', 'lib/builtins/https.js'],
+  ['os-browserify', 'lib/builtins/os.js'],
+  ['path-browserify', 'lib/builtins/path.js'],
+  ['process/', 'lib/builtins/process.js'],
+  ['punycode/', 'lib/builtins/punycode.js'],
+  ['querystring/', 'lib/builtins/querystring.js'],
+  ['stream-browserify', 'lib/builtins/stream.js'],
+  ['string_decoder/', 'lib/builtins/string_decoder.js'],
+  ['timers-browserify', 'lib/builtins/timers.js'],
+  ['tty-browserify', 'lib/builtins/tty.js'],
+  ['url/', 'lib/builtins/url.js'],
+  ['util/', 'lib/builtins/util.js'],
+  ['vm-browserify', 'lib/builtins/vm.js'],
+  ['browserify-zlib', 'lib/builtins/zlib.js'],
+  ['./acorn-wrap', 'vendor/acorn.js'],
+  ['minimatch', 'vendor/minimatch.js'],
+  ['bfile', 'vendor/bfile.js']
+];
+
+function resolveModule(name) {
+  assert(typeof name === 'string');
+  return dirname(require.resolve(`${name}/package.json`));
+}
+
+async function buildModule(name, path) {
+  assert(typeof name === 'string');
+  assert(typeof path === 'string');
+
+  console.log(`Compiling: ${name} from ${path}.`);
+
+  if (name === 'bfile') {
+    const input = resolveModule(name);
+    const file = resolve(input, 'lib', 'fs.js');
+    fs.copyFileSync(file, resolve(ROOT, path));
+    return;
+  }
+
+  await bpkg({
+    env: 'node',
+    browserField: true,
+    input: resolveModule(name),
+    output: resolve(ROOT, path)
+  });
+}
+
+function patchTimers() {
+  const file = resolve(ROOT, 'lib/builtins/timers.js');
+  const code = fs.readFileSync(file, 'utf8');
+  const index = code.indexOf('exports.setTimeout =');
+  assert(index !== -1);
+
+  const top = code.substring(0, index);
+  const bot = code.substring(index);
+
+  let out = '';
+
+  out += top;
+  out += 'var setInterval = global.setInterval;\n';
+  out += 'var clearInterval = global.clearInterval;\n';
+  out += 'var setTimeout = global.setTimeout;\n';
+  out += 'var clearTimeout = global.clearTimeout;\n';
+  out += 'var setImmediate = global.setImmediate;\n';
+  out += 'var clearImmediate = global.clearImmediate;\n';
+  out += '\n';
+  out += bot;
+
+  fs.writeFileSync(file, out);
+}
+
+function buildConstants() {
+  const path = resolve(ROOT, 'lib', 'builtins', 'constants.js');
+  const text = JSON.stringify(constants, null, 2);
+  const code = `module.exports = ${text};\n`;
+
+  fs.writeFileSync(path, code);
+}
+
+const UGLIFY_EXPORTS = `
+exports.describe_ast = function describe_ast() {
+    var out = OutputStream({ beautify: true });
+    function doitem(ctor) {
+        out.print("AST_" + ctor.TYPE);
+        var props = ctor.SELF_PROPS.filter(function(prop) {
+            return !/^\\$/.test(prop);
+        });
+        if (props.length > 0) {
+            out.space();
+            out.with_parens(function() {
+                props.forEach(function(prop, i) {
+                    if (i) out.space();
+                    out.print(prop);
+                });
+            });
+        }
+        if (ctor.documentation) {
+            out.space();
+            out.print_string(ctor.documentation);
+        }
+        if (ctor.SUBCLASSES.length > 0) {
+            out.space();
+            out.with_block(function() {
+                ctor.SUBCLASSES.forEach(function(ctor, i) {
+                    out.indent();
+                    doitem(ctor);
+                    out.newline();
+                });
+            });
+        }
+    };
+    doitem(AST_Node);
+    return out + "\\n";
+};
+
+function infer_options(options) {
+    var result = exports.minify("", options);
+    return result.error && result.error.defs;
+}
+
+exports.default_options = function() {
+    var defs = {};
+    Object.keys(infer_options({ 0: 0 })).forEach(function(component) {
+        var options = {};
+        options[component] = { 0: 0 };
+        if (options = infer_options(options)) {
+            defs[component] = options;
+        }
+    });
+    return defs;
+};
+`;
+
+function buildUglify(name) {
+  assert(typeof name === 'string');
+
+  const dir = resolveModule(name);
+
+  let out = '';
+
+  out += 'var MOZ_SourceMap = null;\n';
+  out += '\n';
+  out += 'try {\n';
+  out += '  MOZ_SourceMap = require("source-map");\n';
+  out += '} catch (e) {\n';
+  out += '  ;\n';
+  out += '}\n';
+  out += '\n';
+
+  for (const file of ['./lib/utils.js',
+                      './lib/ast.js',
+                      './lib/parse.js',
+                      './lib/transform.js',
+                      './lib/scope.js',
+                      './lib/output.js',
+                      './lib/compress.js',
+                      './lib/sourcemap.js',
+                      './lib/mozilla-ast.js',
+                      './lib/propmangle.js',
+                      './lib/minify.js',
+                      './tools/exports.js']) {
+    const path = resolve(dir, file);
+    const text = fs.readFileSync(path, 'utf8');
+
+    out += text + '\n\n';
+  }
+
+  out += UGLIFY_EXPORTS;
+
+  const path = resolve(ROOT, 'vendor', `${name}.js`);
+
+  fs.writeFileSync(path, out, 'utf8');
+}
+
+(async () => {
+  for (const [name, path] of modules)
+    await buildModule(name, path);
+
+  patchTimers();
+  buildConstants();
+  buildUglify('uglify-js');
+  buildUglify('uglify-es');
+})().catch((err) => {
+  console.error(String(err.stack));
+  process.exit(1);
+});

@@ -1,3 +1,11 @@
+var MOZ_SourceMap = null;
+
+try {
+  MOZ_SourceMap = require("source-map");
+} catch (e) {
+  ;
+}
+
 /***********************************************************************
 
   A JavaScript tokenizer / parser / beautifier / compressor.
@@ -42,8 +50,6 @@
  ***********************************************************************/
 
 "use strict";
-
-var MOZ_SourceMap = null;
 
 function characters(str) {
     return str.split("");
@@ -277,6 +283,8 @@ function first_in_statement(stack) {
         return false;
     }
 }
+
+
 /***********************************************************************
 
   A JavaScript tokenizer / parser / beautifier / compressor.
@@ -1228,6 +1236,8 @@ TreeWalker.prototype = {
         }
     }
 };
+
+
 /***********************************************************************
 
   A JavaScript tokenizer / parser / beautifier / compressor.
@@ -2876,6 +2886,8 @@ function parse($TEXT, options) {
         return toplevel;
     }();
 }
+
+
 /***********************************************************************
 
   A JavaScript tokenizer / parser / beautifier / compressor.
@@ -3061,6 +3073,8 @@ TreeTransformer.prototype = new TreeWalker;
         return x;
     });
 });
+
+
 /***********************************************************************
 
   A JavaScript tokenizer / parser / beautifier / compressor.
@@ -3657,6 +3671,8 @@ var base54 = (function() {
     }
     return base54;
 })();
+
+
 /***********************************************************************
 
   A JavaScript tokenizer / parser / beautifier / compressor.
@@ -5170,6 +5186,8 @@ function OutputStream(options) {
         output.add_mapping(this.start, this.key);
     });
 })();
+
+
 /***********************************************************************
 
   A JavaScript tokenizer / parser / beautifier / compressor.
@@ -11667,6 +11685,8 @@ merge(Compressor.prototype, {
         return opt;
     });
 });
+
+
 /***********************************************************************
 
   A JavaScript tokenizer / parser / beautifier / compressor.
@@ -11771,6 +11791,8 @@ function SourceMap(options) {
         }
     };
 }
+
+
 /***********************************************************************
 
   A JavaScript tokenizer / parser / beautifier / compressor.
@@ -12400,6 +12422,8 @@ function SourceMap(options) {
         };
     }
 })();
+
+
 /***********************************************************************
 
   A JavaScript tokenizer / parser / beautifier / compressor.
@@ -12634,6 +12658,8 @@ function mangle_properties(ast, options) {
         }));
     }
 }
+
+
 "use strict";
 
 var to_ascii = typeof atob == "undefined" ? function(b64) {
@@ -12881,6 +12907,7 @@ function minify(files, options) {
     }
 }
 
+
 exports["Dictionary"] = Dictionary;
 exports["minify"] = minify;
 exports["parse"] = parse;
@@ -12888,7 +12915,9 @@ exports["push_uniq"] = push_uniq;
 exports["TreeTransformer"] = TreeTransformer;
 exports["TreeWalker"] = TreeWalker;
 
-function describe_ast() {
+
+
+exports.describe_ast = function describe_ast() {
     var out = OutputStream({ beautify: true });
     function doitem(ctor) {
         out.print("AST_" + ctor.TYPE);
@@ -12921,7 +12950,7 @@ function describe_ast() {
     };
     doitem(AST_Node);
     return out + "\n";
-}
+};
 
 function infer_options(options) {
     var result = exports.minify("", options);

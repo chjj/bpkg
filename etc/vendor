@@ -64,7 +64,7 @@ async function buildModule(name, path, browser) {
   assert(typeof path === 'string');
   assert(typeof browser === 'boolean');
 
-  console.log(`Compiling: ${name} from ${path}.`);
+  console.log(`Compiling: ${name} -> ${path}.`);
 
   const input = resolveModule(name);
   const output = resolve(ROOT, path);
@@ -95,10 +95,10 @@ function patchTimers() {
   let out = '';
 
   out += top;
-  out += 'var setInterval = global.setInterval;\n';
-  out += 'var clearInterval = global.clearInterval;\n';
   out += 'var setTimeout = global.setTimeout;\n';
   out += 'var clearTimeout = global.clearTimeout;\n';
+  out += 'var setInterval = global.setInterval;\n';
+  out += 'var clearInterval = global.clearInterval;\n';
   out += 'var setImmediate = global.setImmediate;\n';
   out += 'var clearImmediate = global.clearImmediate;\n';
   out += '\n';

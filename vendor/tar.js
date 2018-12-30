@@ -187,7 +187,7 @@
  */
 
 var __node_modules__ = [
-  [/* 0 */ '/index.js', function(exports, require, module, __filename, __dirname) {
+[/* 0 */ 'tar', '/index.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
 
 // high-level commands
@@ -207,7 +207,7 @@ exports.Header = __node_require__(15)
 exports.Pax = __node_require__(14)
 exports.types = __node_require__(12)
 }],
-  [/* 1 */ '/lib/create.js', function(exports, require, module, __filename, __dirname) {
+[/* 1 */ 'tar', '/lib/create.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
 
 // tar -c
@@ -314,7 +314,7 @@ const create = (opt, files) => {
   return p
 }
 }],
-  [/* 2 */ '/lib/high-level-opt.js', function(exports, require, module, __filename, __dirname) {
+[/* 2 */ 'tar', '/lib/high-level-opt.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
 
 // turn tar(1) style args like `C` into the more verbose things like `cwd`
@@ -345,7 +345,7 @@ const parse = module.exports = opt => opt ? Object.keys(opt).map(k => [
   argmap.has(k) ? argmap.get(k) : k, opt[k]
 ]).reduce((set, kv) => (set[kv[0]] = kv[1], set), Object.create(null)) : {}
 }],
-  [/* 3 */ '/lib/pack.js', function(exports, require, module, __filename, __dirname) {
+[/* 3 */ 'tar', '/lib/pack.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
 
 const Buffer = __node_require__(4)
@@ -751,7 +751,7 @@ Pack.Sync = PackSync
 
 module.exports = Pack
 }],
-  [/* 4 */ '/lib/buffer.js', function(exports, require, module, __filename, __dirname) {
+[/* 4 */ 'tar', '/lib/buffer.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
 
 // Buffer in node 4.x < 4.5.0 doesn't have working Buffer.from
@@ -764,7 +764,7 @@ if (!B.alloc) {
 }
 module.exports = B
 }],
-  [/* 5 */ '/index.js', function(exports, require, module, __filename, __dirname) {
+[/* 5 */ 'safe-buffer', '/index.js', function(exports, require, module, __filename, __dirname, __meta) {
 /* eslint-disable node/no-deprecated-api */
 var buffer = require('buffer')
 var Buffer = buffer.Buffer
@@ -828,7 +828,7 @@ SafeBuffer.allocUnsafeSlow = function (size) {
   return buffer.SlowBuffer(size)
 }
 }],
-  [/* 6 */ '/index.js', function(exports, require, module, __filename, __dirname) {
+[/* 6 */ 'minipass', '/index.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
 const EE = require('events')
 const Yallist = __node_require__(7)
@@ -1205,7 +1205,7 @@ module.exports = class MiniPass extends EE {
   }
 }
 }],
-  [/* 7 */ '/yallist.js', function(exports, require, module, __filename, __dirname) {
+[/* 7 */ 'yallist', '/yallist.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
 module.exports = Yallist
 
@@ -1583,7 +1583,7 @@ try {
   __node_require__(8)(Yallist)
 } catch (er) {}
 }],
-  [/* 8 */ '/iterator.js', function(exports, require, module, __filename, __dirname) {
+[/* 8 */ 'yallist', '/iterator.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
 module.exports = function (Yallist) {
   Yallist.prototype[Symbol.iterator] = function* () {
@@ -1593,7 +1593,7 @@ module.exports = function (Yallist) {
   }
 }
 }],
-  [/* 9 */ '/index.js', function(exports, require, module, __filename, __dirname) {
+[/* 9 */ 'minizlib', '/index.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
 
 const assert = require('assert')
@@ -1930,7 +1930,7 @@ exports.DeflateRaw = DeflateRaw
 exports.InflateRaw = InflateRaw
 exports.Unzip = Unzip
 }],
-  [/* 10 */ '/constants.js', function(exports, require, module, __filename, __dirname) {
+[/* 10 */ 'minizlib', '/constants.js', function(exports, require, module, __filename, __dirname, __meta) {
 module.exports = Object.freeze({
   Z_NO_FLUSH: 0,
   Z_PARTIAL_FLUSH: 1,
@@ -1978,7 +1978,7 @@ module.exports = Object.freeze({
   Z_DEFAULT_LEVEL: -1
 })
 }],
-  [/* 11 */ '/lib/read-entry.js', function(exports, require, module, __filename, __dirname) {
+[/* 11 */ 'tar', '/lib/read-entry.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
 const types = __node_require__(12)
 const MiniPass = __node_require__(6)
@@ -2074,7 +2074,7 @@ module.exports = class ReadEntry extends MiniPass {
   }
 }
 }],
-  [/* 12 */ '/lib/types.js', function(exports, require, module, __filename, __dirname) {
+[/* 12 */ 'tar', '/lib/types.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
 // map types from key to human-friendly name
 exports.name = new Map([
@@ -2120,7 +2120,7 @@ exports.name = new Map([
 // map the other direction
 exports.code = new Map(Array.from(exports.name).map(kv => [kv[1], kv[0]]))
 }],
-  [/* 13 */ '/lib/write-entry.js', function(exports, require, module, __filename, __dirname) {
+[/* 13 */ 'tar', '/lib/write-entry.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
 const Buffer = __node_require__(4)
 const MiniPass = __node_require__(6)
@@ -2544,7 +2544,7 @@ const getType = stat =>
 
 module.exports = WriteEntry
 }],
-  [/* 14 */ '/lib/pax.js', function(exports, require, module, __filename, __dirname) {
+[/* 14 */ 'tar', '/lib/pax.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
 const Buffer = __node_require__(4)
 const Header = __node_require__(15)
@@ -2692,7 +2692,7 @@ const parseKVLine = (set, line) => {
 
 module.exports = Pax
 }],
-  [/* 15 */ '/lib/header.js', function(exports, require, module, __filename, __dirname) {
+[/* 15 */ 'tar', '/lib/header.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
 // parse a 512-byte header block to a data object, or vice-versa
 // encode returns `true` if a pax extended header is needed, because
@@ -2983,7 +2983,7 @@ const encString = (buf, off, size, string) =>
 
 module.exports = Header
 }],
-  [/* 16 */ '/lib/large-numbers.js', function(exports, require, module, __filename, __dirname) {
+[/* 16 */ 'tar', '/lib/large-numbers.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
 // Tar can encode large and negative numbers using a leading byte of
 // 0xff for negative, and 0x80 for positive.  The trailing byte in the
@@ -3077,7 +3077,7 @@ const onesComp = byte => (0xff ^ byte) & 0xff
 
 const twosComp = byte => ((0xff ^ byte) + 1) & 0xff
 }],
-  [/* 17 */ '/lib/warn-mixin.js', function(exports, require, module, __filename, __dirname) {
+[/* 17 */ 'tar', '/lib/warn-mixin.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
 module.exports = Base => class extends Base {
   warn (msg, data) {
@@ -3093,7 +3093,7 @@ module.exports = Base => class extends Base {
   }
 }
 }],
-  [/* 18 */ '/lib/winchars.js', function(exports, require, module, __filename, __dirname) {
+[/* 18 */ 'tar', '/lib/winchars.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
 
 // When writing files on Windows, translate the characters to their
@@ -3118,7 +3118,7 @@ module.exports = {
   decode: s => win.reduce((s, c) => s.split(c).join(toRaw.get(c)), s)
 }
 }],
-  [/* 19 */ '/lib/mode-fix.js', function(exports, require, module, __filename, __dirname) {
+[/* 19 */ 'tar', '/lib/mode-fix.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
 module.exports = (mode, isDir) => {
   mode &= 0o7777
@@ -3134,7 +3134,7 @@ module.exports = (mode, isDir) => {
   return mode
 }
 }],
-  [/* 20 */ '/yallist.js', function(exports, require, module, __filename, __dirname) {
+[/* 20 */ 'yallist', '/yallist.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
 module.exports = Yallist
 
@@ -3512,7 +3512,7 @@ try {
   __node_require__(21)(Yallist)
 } catch (er) {}
 }],
-  [/* 21 */ '/iterator.js', function(exports, require, module, __filename, __dirname) {
+[/* 21 */ 'yallist', '/iterator.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
 module.exports = function (Yallist) {
   Yallist.prototype[Symbol.iterator] = function* () {
@@ -3522,7 +3522,7 @@ module.exports = function (Yallist) {
   }
 }
 }],
-  [/* 22 */ '/index.js', function(exports, require, module, __filename, __dirname) {
+[/* 22 */ 'fs-minipass', '/index.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
 const MiniPass = __node_require__(6)
 const EE = require('events').EventEmitter
@@ -3910,7 +3910,7 @@ exports.ReadStreamSync = ReadStreamSync
 exports.WriteStream = WriteStream
 exports.WriteStreamSync = WriteStreamSync
 }],
-  [/* 23 */ '/lib/list.js', function(exports, require, module, __filename, __dirname) {
+[/* 23 */ 'tar', '/lib/list.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
 
 const Buffer = __node_require__(4)
@@ -4042,7 +4042,7 @@ const listFile = (opt, cb) => {
 
 const list = opt => new Parser(opt)
 }],
-  [/* 24 */ '/lib/parse.js', function(exports, require, module, __filename, __dirname) {
+[/* 24 */ 'tar', '/lib/parse.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
 
 // this[BUFFER] is the remainder of a chunk if we're waiting for
@@ -4467,7 +4467,7 @@ module.exports = warner(class Parser extends EE {
   }
 })
 }],
-  [/* 25 */ '/lib/replace.js', function(exports, require, module, __filename, __dirname) {
+[/* 25 */ 'tar', '/lib/replace.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
 const Buffer = __node_require__(4)
 
@@ -4689,7 +4689,7 @@ const addFilesAsync = (p, files) => {
   p.end()
 }
 }],
-  [/* 26 */ '/lib/update.js', function(exports, require, module, __filename, __dirname) {
+[/* 26 */ 'tar', '/lib/update.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
 
 // tar -u
@@ -4727,7 +4727,7 @@ const mtimeFilter = opt => {
     : (path, stat) => !(opt.mtimeCache.get(path) > stat.mtime)
 }
 }],
-  [/* 27 */ '/lib/extract.js', function(exports, require, module, __filename, __dirname) {
+[/* 27 */ 'tar', '/lib/extract.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
 
 // tar -x
@@ -4841,7 +4841,7 @@ const extract = opt => {
   return new Unpack(opt)
 }
 }],
-  [/* 28 */ '/lib/unpack.js', function(exports, require, module, __filename, __dirname) {
+[/* 28 */ 'tar', '/lib/unpack.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
 
 const assert = require('assert')
@@ -5464,7 +5464,7 @@ class UnpackSync extends Unpack {
 Unpack.Sync = UnpackSync
 module.exports = Unpack
 }],
-  [/* 29 */ '/lib/mkdir.js', function(exports, require, module, __filename, __dirname) {
+[/* 29 */ 'tar', '/lib/mkdir.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
 // wrapper around mkdirp for tar's needs.
 
@@ -5672,7 +5672,7 @@ const mkdirSync = module.exports.sync = (dir, opt) => {
   return done(created)
 }
 }],
-  [/* 30 */ '/index.js', function(exports, require, module, __filename, __dirname) {
+[/* 30 */ 'mkdirp', '/index.js', function(exports, require, module, __filename, __dirname, __meta) {
 var path = require('path');
 var fs = require('fs');
 var _0777 = parseInt('0777', 8);
@@ -5772,7 +5772,7 @@ mkdirP.sync = function sync (p, opts, made) {
     return made;
 };
 }],
-  [/* 31 */ '/chownr.js', function(exports, require, module, __filename, __dirname) {
+[/* 31 */ 'chownr', '/chownr.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
 const fs = require('fs')
 const path = require('path')
@@ -5886,29 +5886,36 @@ function __node_require__(id) {
 
   var mod = __node_modules__[id];
   var name = mod[0];
-  var func = mod[1];
+  var path = mod[1];
+  var func = mod[2];
 
+  var filename = __filename;
+  var dirname = __dirname;
+  var meta;
+
+  var _require = require;
   var _exports = exports;
   var _module = module;
 
   if (id !== 0) {
     _exports = {};
     _module = {
-      id: name,
+      id: '/' + name + path,
       exports: _exports,
       parent: module,
-      filename: __filename,
+      filename: filename,
       loaded: false,
-      children: [],
-      paths: module.paths.slice(),
-      require: module.require.bind(module)
+      children: module.children,
+      paths: module.paths,
+      require: module.require
     };
   }
 
   __node_cache__[id] = _module;
 
   try {
-    func.call(_exports, _exports, require, _module, __filename, __dirname);
+    func.call(_exports, _exports, _require,
+              _module, filename, dirname, meta);
   } catch (e) {
     delete __node_cache__[id];
     throw e;

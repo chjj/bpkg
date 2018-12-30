@@ -487,9 +487,15 @@ exports.mkdirpSync = function mkdirpSync(dir, mode) {
   return exports.mkdirSync(dir, { mode, recursive: true });
 };
 
-exports.rimraf = async function rimraf(path) {
+exports.rimraf = async function rimraf(path, filter) {
+  if (filter == null)
+    filter = async (path, stat) => true;
+
   if (typeof path !== 'string')
     throw new TypeError('"path" must be a path.');
+
+  if (typeof filter !== 'function')
+    throw new TypeError('"filter" must be a function.');
 
   let ret = 0;
   let stat = null;
@@ -501,6 +507,9 @@ exports.rimraf = async function rimraf(path) {
       return ret + 1;
     throw e;
   }
+
+  if (!await filter(path, stat))
+    return ret + 1;
 
   if (stat.isDirectory()) {
     let list = null;
@@ -514,7 +523,7 @@ exports.rimraf = async function rimraf(path) {
     }
 
     for (const name of list)
-      ret += await exports.rimraf(Path.join(path, name));
+      ret += await exports.rimraf(Path.join(path, name), filter);
 
     try {
       await exports.rmdir(path);
@@ -538,9 +547,15 @@ exports.rimraf = async function rimraf(path) {
   return ret;
 };
 
-exports.rimrafSync = function rimrafSync(path) {
+exports.rimrafSync = function rimrafSync(path, filter) {
+  if (filter == null)
+    filter = (path, stat) => true;
+
   if (typeof path !== 'string')
     throw new TypeError('"path" must be a path.');
+
+  if (typeof filter !== 'function')
+    throw new TypeError('"filter" must be a function.');
 
   let ret = 0;
   let stat = null;
@@ -552,6 +567,9 @@ exports.rimrafSync = function rimrafSync(path) {
       return ret + 1;
     throw e;
   }
+
+  if (!filter(path, stat))
+    return ret + 1;
 
   if (stat.isDirectory()) {
     let list = null;
@@ -565,7 +583,7 @@ exports.rimrafSync = function rimrafSync(path) {
     }
 
     for (const name of list)
-      ret += exports.rimrafSync(Path.join(path, name));
+      ret += exports.rimrafSync(Path.join(path, name), filter);
 
     try {
       exports.rmdirSync(path);
@@ -741,22 +759,23 @@ if (version < 0x0a0c00) {
   const _mkdir = exports.mkdir;
   const _mkdirSync = exports.mkdirSync;
 
-  const parsePath = (path) => {
-    path = Path.normalize(path);
+  const getPaths = (path) => {
+    const paths = [];
 
-    const {root} = Path.parse(path);
+    let dir = Path.normalize(path);
 
-    path = path.substring(root.length);
+    for (;;) {
+      paths.push(dir);
 
-    if (path.length > 0 && path[path.length - 1] === Path.sep)
-      path = path.slice(0, -1);
+      const next = Path.dirname(dir);
 
-    if (path === '.' || path.length === 0)
-      return [root, []];
+      if (next === dir)
+        break;
 
-    const parts = path.split(Path.sep);
+      dir = next;
+    }
 
-    return [root, parts];
+    return paths.reverse();
   };
 
   const mkdirp = async (dir, mode) => {
@@ -769,11 +788,7 @@ if (version < 0x0a0c00) {
     if ((mode >>> 0) !== mode)
       throw new TypeError('"mode" must be an integer.');
 
-    let [path, parts] = parsePath(dir);
-
-    for (const part of parts) {
-      path += part;
-
+    for (const path of getPaths(dir)) {
       try {
         const stat = await exports.stat(path);
         if (!stat.isDirectory())
@@ -784,8 +799,6 @@ if (version < 0x0a0c00) {
         else
           throw e;
       }
-
-      path += Path.sep;
     }
   };
 
@@ -799,11 +812,7 @@ if (version < 0x0a0c00) {
     if ((mode >>> 0) !== mode)
       throw new TypeError('"mode" must be an integer.');
 
-    let [path, parts] = parsePath(dir);
-
-    for (const part of parts) {
-      path += part;
-
+    for (const path of getPaths(dir)) {
       try {
         const stat = exports.statSync(path);
         if (!stat.isDirectory())
@@ -814,8 +823,6 @@ if (version < 0x0a0c00) {
         else
           throw e;
       }
-
-      path += Path.sep;
     }
   };
 
@@ -823,17 +830,20 @@ if (version < 0x0a0c00) {
     let mode = null;
     let recursive = false;
 
-    if (typeof options === 'number') {
-      mode = options;
-    } else if (options && typeof options === 'object') {
-      if (options.mode != null)
-        mode = options.mode;
+    if (options != null) {
+      if (typeof options === 'object') {
+        if (options.mode != null)
+          mode = options.mode;
 
-      if (options.recursive)
-        recursive = true;
-    } else if (options != null) {
-      throw new TypeError('"options" must be an object.');
+        if (options.recursive != null)
+          recursive = options.recursive;
+      } else {
+        mode = options;
+      }
     }
+
+    if (typeof recursive !== 'boolean')
+      throw new TypeError('"recursive" must be a boolean.');
 
     if (mode != null) {
       if ((mode >>> 0) !== mode)

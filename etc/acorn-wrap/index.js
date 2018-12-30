@@ -6,7 +6,7 @@ const walk = require('acorn-walk');
 const Parser = acorn.Parser.extend(
   require('acorn-bigint'),
   require('acorn-export-ns-from'),
-  require('acorn-dynamic-import/src/index').default,
+  require('acorn-dynamic-import/src/index')['default'],
   require('acorn-import-meta')
 );
 

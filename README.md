@@ -31,7 +31,7 @@ $ bpkg -h
     --exports                expose on module.exports for browser bundles
     --global                 expose globally for browser bundles
     --name <name>            name to use for global exposure (default: pkg.name)
-    -p, --plugin <plugin>   use plugin
+    -p, --plugin <plugin>    use plugin
     -r, --requires <a,b,..>  comma-separated list of requires
     --environment <k=v,..>   key-value pairs for process.env
     --globals <k=v,..>       key-value pairs for global

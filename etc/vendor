@@ -8,9 +8,17 @@ const fs = require('fs');
 const {dirname, resolve} = require('path');
 const bpkg = require('../lib/bpkg');
 
+/*
+ * Constants
+ */
+
 const ROOT = resolve(__dirname, '..');
 
-const modules = [
+/*
+ * Modules
+ */
+
+const builtins = [
   ['assert/', 'lib/builtins/assert.js'],
   ['buffer/', 'lib/builtins/buffer.js'],
   ['console-browserify', 'lib/builtins/console.js'],
@@ -32,36 +40,46 @@ const modules = [
   ['url/', 'lib/builtins/url.js'],
   ['util/', 'lib/builtins/util.js'],
   ['vm-browserify', 'lib/builtins/vm.js'],
-  ['browserify-zlib', 'lib/builtins/zlib.js'],
+  ['browserify-zlib', 'lib/builtins/zlib.js']
+];
+
+const modules = [
   ['./acorn-wrap', 'vendor/acorn.js'],
   ['bfile', 'vendor/bfile.js'],
   ['minimatch', 'vendor/minimatch.js'],
   ['tar', 'vendor/tar.js']
 ];
 
+/*
+ * Vendor
+ */
+
 function resolveModule(name) {
   assert(typeof name === 'string');
   return dirname(require.resolve(`${name}/package.json`));
 }
 
-async function buildModule(name, path) {
+async function buildModule(name, path, browser) {
   assert(typeof name === 'string');
   assert(typeof path === 'string');
+  assert(typeof browser === 'boolean');
 
   console.log(`Compiling: ${name} from ${path}.`);
 
+  const input = resolveModule(name);
+  const output = resolve(ROOT, path);
+
   if (name === 'bfile') {
-    const input = resolveModule(name);
     const file = resolve(input, 'lib', 'fs.js');
-    fs.copyFileSync(file, resolve(ROOT, path));
+    fs.copyFileSync(file, output);
     return;
   }
 
   await bpkg({
     env: 'node',
-    browserField: true,
-    input: resolveModule(name),
-    output: resolve(ROOT, path)
+    browserField: browser,
+    input,
+    output
   });
 }
 
@@ -192,9 +210,16 @@ function buildUglify(name) {
   fs.writeFileSync(path, out, 'utf8');
 }
 
+/*
+ * Execute
+ */
+
 (async () => {
+  for (const [name, path] of builtins)
+    await buildModule(name, path, true);
+
   for (const [name, path] of modules)
-    await buildModule(name, path);
+    await buildModule(name, path, false);
 
   patchTimers();
   buildConstants();

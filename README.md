@@ -25,7 +25,9 @@ $ bpkg -h
     -i, --ignore-missing     ignore missing modules during compilation
     -c, --collect-bindings   include bindings separately
     -x, --exclude-source     exclude c++ source in multi mode
+    -H, --no-header          do not place header at the top of the bundle
     -l, --no-license         do not place licenses at the top of the bundle
+    -d, --date <date>        set date for build (good for deterministic builds)
     -m, --multi              output module as multiple files
     -s, --single             build a single file without transpiling modules
     --exports                expose on module.exports for browser bundles

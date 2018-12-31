@@ -33,7 +33,9 @@ const HELP = `
     -i, --ignore-missing     ignore missing modules during compilation
     -c, --collect-bindings   include bindings separately
     -x, --exclude-source     exclude c++ source in multi mode
+    -H, --no-header          do not place header at the top of the bundle
     -l, --no-license         do not place licenses at the top of the bundle
+    -d, --date <date>        set date for build (good for deterministic builds)
     -m, --multi              output module as multiple files
     -s, --single             build a single file without transpiling modules
     --exports                expose on module.exports for browser bundles
@@ -154,7 +156,9 @@ async function parseArgs() {
     ignoreMissing: false,
     collectBindings: false,
     excludeSource: false,
+    noHeader: false,
     noLicense: false,
+    time: new Date(),
     multi: false,
     single: false,
     exports: false,
@@ -256,9 +260,32 @@ async function parseArgs() {
         break;
       }
 
+      case '-H':
+      case '--no-header': {
+        options.noHeader = true;
+        break;
+      }
+
       case '-l':
       case '--no-license': {
         options.noLicense = true;
+        break;
+      }
+
+      case '-d':
+      case '--date': {
+        if (!next || next[0] === '-')
+          throw new Error(`Invalid option for: ${arg}.`);
+
+        const date = new Date(next);
+
+        if (date.toString() === 'Invalid Date')
+          throw new Error(`Invalid date: ${next}.`);
+
+        options.time = date;
+
+        i += 1;
+
         break;
       }
 

@@ -12,6 +12,7 @@ const bpkg = require('../lib/bpkg');
  * Constants
  */
 
+const DATE = new Date();
 const ROOT = resolve(__dirname, '..');
 
 /*
@@ -77,6 +78,7 @@ async function buildModule(name, path, browser) {
 
   await bpkg({
     env: 'node',
+    time: DATE,
     browserField: browser,
     input,
     output

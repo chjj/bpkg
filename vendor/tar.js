@@ -1,4 +1,8 @@
 /*!
+ * tar@4.4.8 - tar for node
+ * Copyright (c) 2018, Isaac Z. Schlueter (ISC)
+ * https://github.com/npm/node-tar#readme
+ *
  * License for tar@4.4.8:
  *
  * The ISC License
@@ -183,7 +187,6 @@
  * WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
  * ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR
  * IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
- *
  */
 
 var __node_modules__ = [

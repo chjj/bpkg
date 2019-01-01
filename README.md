@@ -150,19 +150,35 @@ To expose globally:
 $ bpkg --browser --global --name=bcrypto ./node_modules/bcrypto bcrypto.js
 ```
 
-Plugins & requires:
+#### Plugins & requires
+
+Babel:
 
 ``` bash
-$ bpkg --plugin [ babel --presets [ @babel/env ] ] --requires @babel/polyfill \
-  --browser --global --name=bcrypto ./node_modules/bcrypto bcrypto.js
+$ bpkg --plugin [ babel --presets [ @babel/env ] ] \
+       --requires @babel/polyfill                  \
+       --browser --global --name=bcrypto           \
+       ./node_modules/bcrypto bcrypto.js
 ```
+
+Uglify-ES:
 
 ``` bash
 $ bpkg -b -p [ uglify-es --toplevel ] ./bcrypto bcrypto.js
 ```
 
+TypeScript:
+
 ``` bash
 $ bpkg -b -p typescript my-script.ts my-script.js
+```
+
+Babylonia:
+
+``` bash
+$ bpkg -p [ babylonia --presets [ babylonia/preset-env ] ] \
+       -r babylonia/polyfill -b --global --name=bcrypto    \
+       ../bcrypto bcrypto.js
 ```
 
 ## Plugins

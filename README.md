@@ -255,6 +255,11 @@ class MyPlugin {
     return code;
   }
 
+  // Rewrite location for module resolver.
+  async redirect(location) {
+    return location;
+  }
+
   // Only called in multi mode, allows
   // you to "rewrite" the output filename.
   async rewrite(module, path) {

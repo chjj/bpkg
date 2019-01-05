@@ -28,21 +28,21 @@ const HELP = `
     -e, --env <name>         set environment, node or browser (default: node)
     -n, --node               set environment to node
     -b, --browser            set environment to browser
-    --extensions <ext>   list of extensions (default: .js,.mjs,.json,.node)
+    -x, --extensions <ext>   list of extensions (default: .js,.mjs,.json,.node)
     -f, --browser-field      force usage of package.json "browser" field
     -i, --ignore-missing     ignore missing modules during compilation
     -c, --collect-bindings   include bindings separately
-    -x, --exclude-source     exclude c++ source in multi mode
+    -X, --exclude-source     exclude c++ source in multi mode
     -H, --no-header          do not place header at the top of the bundle
     -l, --no-license         do not place licenses at the top of the bundle
     -d, --date <date>        set date for build (good for deterministic builds)
     -m, --multi              output module as multiple files
     -s, --standalone         append UMD initialization code to browser bundle
-    --name <name>            name to use for global exposure (default: pkg.name)
+    -N, --name <name>        name to use for global exposure (default: pkg.name)
     -p, --plugin <plugin>    use plugin
     -r, --requires <a,b,..>  comma-separated list of requires
-    --environment <k=v,..>   key-value pairs for process.env
-    --globals <k=v,..>       key-value pairs for global
+    -E, --environment <k=v>  key-value pairs for process.env
+    -g, --globals <k=v>      key-value pairs for global
     -h, --help               output usage information
 `;
 
@@ -221,6 +221,7 @@ async function parseArgs() {
         break;
       }
 
+      case '-x':
       case '--extensions': {
         if (!next || next[0] === '-')
           throw new Error(`Invalid option for: ${arg}.`);
@@ -250,7 +251,7 @@ async function parseArgs() {
         break;
       }
 
-      case '-x':
+      case '-X':
       case '--exclude-source': {
         options.excludeSource = true;
         break;
@@ -297,6 +298,7 @@ async function parseArgs() {
         break;
       }
 
+      case '-N':
       case '--name': {
         if (!next || next[0] === '-')
           throw new Error(`Invalid option for: ${arg}.`);
@@ -352,12 +354,14 @@ async function parseArgs() {
         break;
       }
 
+      case '-g':
       case '--globals':
+      case '-E':
       case '--environment': {
         if (!next || next[0] === '-')
           throw new Error(`Invalid option for: ${arg}.`);
 
-        const target = arg === '--globals'
+        const target = arg === '-g' || arg === '--globals'
           ? options.globals
           : options.environment;
 

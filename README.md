@@ -121,9 +121,11 @@ bcrypto/lib/aead.js
 ...
 ```
 
-The above will deduplicate and include the dependency tree in a
-`node_modules` directory below `bcrypto`. With the --collect-bindings option,
-all native bindings will be built and included in the tarball.
+The above will deduplicate and include the dependency tree in a `node_modules`
+directory below `bcrypto`. With the --collect-bindings option, all native
+bindings will be built and included in the tarball. The tarball will include a
+`build` and `install` script for a completely NPM-less install (the scripts are
+essentially `$ npm install` behavior).
 
 This is extremely useful for packaging your project for something _other_ than
 NPM (an OS package manager, for example).
@@ -138,46 +140,60 @@ $ wc -l bcrypto.js
 51910 bcrypto.js
 ```
 
-To expose on module.exports:
+To expose with UMD (use `--name` to specify AMD and global name):
 
 ``` bash
-$ bpkg --browser --exports ./node_modules/bcrypto bcrypto.js
-```
-
-To expose globally:
-
-``` bash
-$ bpkg --browser --global --name=bcrypto ./node_modules/bcrypto bcrypto.js
+$ bpkg --browser --standalone --name=bcrypto ./node_modules/bcrypto bcrypto.js
 ```
 
 #### Plugins & requires
 
-Babel:
+Babel with `@babel/polyfill`:
 
 ``` bash
 $ bpkg --plugin [ babel --presets [ @babel/env ] ] \
        --requires @babel/polyfill                  \
-       --browser --global --name=bcrypto           \
+       --browser --standalone --name=bcrypto       \
        ./node_modules/bcrypto bcrypto.js
+```
+
+Babel with `@babel/plugin-transform-runtime`:
+
+``` bash
+$ bpkg --plugin [ babel                            \
+         --presets [ @babel/env ]                  \
+         --plugins [ @babel/transform-runtime ]    \
+       ]                                           \
+       --browser --standalone --name=bcrypto       \
+       ./node_modules/bcrypto bcrypto.js
+```
+
+bpkg is smart enough to properly resolve the corejs and babel-runtime requires
+that `@babel/plugin-transform-runtime` adds, so no need to add these to your
+dependencies.
+
+Uglify-JS:
+
+``` bash
+$ bpkg -bp [ uglify-js --toplevel ] ./bcrypto bcrypto.js
 ```
 
 Uglify-ES:
 
 ``` bash
-$ bpkg -b -p [ uglify-es --toplevel ] ./bcrypto bcrypto.js
+$ bpkg -bp [ uglify-es --toplevel ] ./bcrypto bcrypto.js
 ```
 
 TypeScript:
 
 ``` bash
-$ bpkg -b -p typescript my-script.ts my-script.js
+$ bpkg -bp typescript my-script.ts my-script.js
 ```
 
 Babylonia:
 
 ``` bash
-$ bpkg -p [ babylonia --presets [ babylonia/preset-env ] ] \
-       -r babylonia/polyfill -b --global --name=bcrypto    \
+$ bpkg -sbp [ babylonia --targets 'last 2 versions' ] \
        ../bcrypto bcrypto.js
 ```
 

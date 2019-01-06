@@ -272,7 +272,7 @@ class MyPlugin {
   }
 
   // Rewrite location for module resolver.
-  async redirect(location) {
+  async redirect(location, from) {
     return location;
   }
 

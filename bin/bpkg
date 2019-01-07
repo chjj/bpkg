@@ -144,7 +144,7 @@ async function readInput() {
 async function parseArgs() {
   const options = {
     __proto__: null,
-    stream: stdout,
+    stream: stderr,
     input: null,
     output: null,
     code: null,

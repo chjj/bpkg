@@ -20,23 +20,21 @@ $ bpkg -h
     -e, --env <name>         set environment, node or browser (default: node)
     -n, --node               set environment to node
     -b, --browser            set environment to browser
-    --extensions <a,b,..>    list of extensions (default: .js,.mjs,.json,.node)
+    -x, --extensions <ext>   list of extensions (default: .js,.mjs,.json,.node)
     -f, --browser-field      force usage of package.json "browser" field
     -i, --ignore-missing     ignore missing modules during compilation
     -c, --collect-bindings   include bindings separately
-    -x, --exclude-source     exclude c++ source in multi mode
+    -X, --exclude-source     exclude c++ source in multi mode
     -H, --no-header          do not place header at the top of the bundle
     -l, --no-license         do not place licenses at the top of the bundle
     -d, --date <date>        set date for build (good for deterministic builds)
     -m, --multi              output module as multiple files
-    -s, --single             build a single file without transpiling modules
-    --exports                expose on module.exports for browser bundles
-    --global                 expose globally for browser bundles
-    --name <name>            name to use for global exposure (default: pkg.name)
+    -s, --standalone         append UMD initialization code to browser bundle
+    -N, --name <name>        name to use for global exposure (default: pkg.name)
     -p, --plugin <plugin>    use plugin
     -r, --requires <a,b,..>  comma-separated list of requires
-    --environment <k=v,..>   key-value pairs for process.env
-    --globals <k=v,..>       key-value pairs for global
+    -E, --environment <k=v>  key-value pairs for process.env
+    -g, --globals <k=v>      key-value pairs for global
     -h, --help               output usage information
 ```
 

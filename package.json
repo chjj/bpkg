@@ -19,9 +19,6 @@
     "lint": "eslint bin/* etc/vendor lib/*.js lib/plugins lib/templates || exit 0",
     "test": "bmocha --reporter spec test/*-test.js"
   },
-  "devDependencies": {
-    "bmocha": "^0.1.8"
-  },
   "engines": {
     "node": ">=8.0.0"
   }

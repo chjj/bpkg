@@ -1,6 +1,6 @@
 /*!
  * minimatch@3.0.4 - a glob matcher in javascript
- * Copyright (c) 2018, Isaac Z. Schlueter (ISC)
+ * Copyright (c) 2019, Isaac Z. Schlueter (ISC)
  * https://github.com/isaacs/minimatch#readme
  *
  * License for minimatch@3.0.4:
@@ -103,7 +103,7 @@ try {
 } catch (er) {}
 
 var GLOBSTAR = minimatch.GLOBSTAR = Minimatch.GLOBSTAR = {}
-var expand = __node_require__(1)
+var expand = __node_require__(1 /* 'brace-expansion' */)
 
 var plTypes = {
   '!': { open: '(?:(?!(?:', close: '))[^/]*?)'},
@@ -1019,8 +1019,8 @@ function regExpEscape (s) {
 }
 }],
 [/* 1 */ 'brace-expansion', '/index.js', function(exports, require, module, __filename, __dirname, __meta) {
-var concatMap = __node_require__(2);
-var balanced = __node_require__(3);
+var concatMap = __node_require__(2 /* 'concat-map' */);
+var balanced = __node_require__(3 /* 'balanced-match' */);
 
 module.exports = expandTop;
 

@@ -140,14 +140,14 @@ var __node_modules__ = [
 [/* 0 */ 'acorn-wrap', '/index.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict';
 
-const acorn = __node_require__(1);
-const walk = __node_require__(2);
+const acorn = __node_require__(1 /* 'acorn' */);
+const walk = __node_require__(2 /* 'acorn-walk' */);
 
 const Parser = acorn.Parser.extend(
-  __node_require__(3),
-  __node_require__(4),
-  __node_require__(5)['default'],
-  __node_require__(6)
+  __node_require__(3 /* 'acorn-bigint' */),
+  __node_require__(4 /* 'acorn-export-ns-from' */),
+  __node_require__(5 /* 'acorn-dynamic-import/src/index' */)['default'],
+  __node_require__(6 /* 'acorn-import-meta' */)
 );
 
 walk.base.Import = () => {};
@@ -5965,7 +5965,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
 [/* 3 */ 'acorn-bigint', '/index.js', function(exports, require, module, __filename, __dirname, __meta) {
 "use strict"
 
-const acorn = __node_require__(1)
+const acorn = __node_require__(1 /* 'acorn' */)
 const tt = acorn.tokTypes
 const isIdentifierStart = acorn.isIdentifierStart
 
@@ -6022,7 +6022,7 @@ module.exports = function(Parser) {
 
 const skipWhiteSpace = /(?:\s|\/\/.*|\/\*[^]*?\*\/)*/g
 
-const tt = __node_require__(1).tokTypes
+const tt = __node_require__(1 /* 'acorn' */).tokTypes
 
 module.exports = function(Parser) {
   return class extends Parser {
@@ -6054,7 +6054,7 @@ module.exports = function(Parser) {
 'use strict';
 
 /* eslint-disable no-underscore-dangle */
-var __bpkg_import_0__ = __node_require__(1);
+var __bpkg_import_0__ = __node_require__(1 /* 'acorn' */);
 var tt = __bpkg_import_0__['tokTypes'];
 
 
@@ -6079,7 +6079,7 @@ function parenAfter() {
   return /^(\s|\/\/.*|\/\*[^]*?\*\/)*\(/.test(this.input.slice(this.pos));
 }
 
-exports['default'] = function dynamicImport(Parser) {
+function dynamicImport(Parser) {
   return class extends Parser {
     parseStatement(context, topLevel, exports) {
       if (this.type === tt._import && parenAfter.call(this)) {
@@ -6095,12 +6095,13 @@ exports['default'] = function dynamicImport(Parser) {
       return super.parseExprAtom(refDestructuringErrors);
     }
   };
-};
+}
+exports['default'] = dynamicImport;
 }],
 [/* 6 */ 'acorn-import-meta', '/index.js', function(exports, require, module, __filename, __dirname, __meta) {
 "use strict"
 
-const tt = __node_require__(1).tokTypes
+const tt = __node_require__(1 /* 'acorn' */).tokTypes
 
 const skipWhiteSpace = /(?:\s|\/\/.*|\/\*[^]*?\*\/)*/g
 

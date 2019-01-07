@@ -1,6 +1,6 @@
 /*!
  * tar@4.4.8 - tar for node
- * Copyright (c) 2018, Isaac Z. Schlueter (ISC)
+ * Copyright (c) 2019, Isaac Z. Schlueter (ISC)
  * https://github.com/npm/node-tar#readme
  *
  * License for tar@4.4.8:
@@ -194,32 +194,32 @@ var __node_modules__ = [
 'use strict'
 
 // high-level commands
-exports.c = exports.create = __node_require__(1)
-exports.r = exports.replace = __node_require__(25)
-exports.t = exports.list = __node_require__(23)
-exports.u = exports.update = __node_require__(26)
-exports.x = exports.extract = __node_require__(27)
+exports.c = exports.create = __node_require__(1 /* './lib/create.js' */)
+exports.r = exports.replace = __node_require__(25 /* './lib/replace.js' */)
+exports.t = exports.list = __node_require__(23 /* './lib/list.js' */)
+exports.u = exports.update = __node_require__(26 /* './lib/update.js' */)
+exports.x = exports.extract = __node_require__(27 /* './lib/extract.js' */)
 
 // classes
-exports.Pack = __node_require__(3)
-exports.Unpack = __node_require__(28)
-exports.Parse = __node_require__(24)
-exports.ReadEntry = __node_require__(11)
-exports.WriteEntry = __node_require__(13)
-exports.Header = __node_require__(15)
-exports.Pax = __node_require__(14)
-exports.types = __node_require__(12)
+exports.Pack = __node_require__(3 /* './lib/pack.js' */)
+exports.Unpack = __node_require__(28 /* './lib/unpack.js' */)
+exports.Parse = __node_require__(24 /* './lib/parse.js' */)
+exports.ReadEntry = __node_require__(11 /* './lib/read-entry.js' */)
+exports.WriteEntry = __node_require__(13 /* './lib/write-entry.js' */)
+exports.Header = __node_require__(15 /* './lib/header.js' */)
+exports.Pax = __node_require__(14 /* './lib/pax.js' */)
+exports.types = __node_require__(12 /* './lib/types.js' */)
 }],
 [/* 1 */ 'tar', '/lib/create.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
 
 // tar -c
-const hlo = __node_require__(2)
+const hlo = __node_require__(2 /* './high-level-opt.js' */)
 
-const Pack = __node_require__(3)
+const Pack = __node_require__(3 /* './pack.js' */)
 const fs = require('fs')
-const fsm = __node_require__(22)
-const t = __node_require__(23)
+const fsm = __node_require__(22 /* 'fs-minipass' */)
+const t = __node_require__(23 /* './list.js' */)
 const path = require('path')
 
 const c = module.exports = (opt_, files, cb) => {
@@ -351,7 +351,7 @@ const parse = module.exports = opt => opt ? Object.keys(opt).map(k => [
 [/* 3 */ 'tar', '/lib/pack.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
 
-const Buffer = __node_require__(4)
+const Buffer = __node_require__(4 /* './buffer.js' */)
 
 // A readable tar stream creator
 // Technically, this is a transform stream that you write paths into,
@@ -375,13 +375,13 @@ class PackJob {
   }
 }
 
-const MiniPass = __node_require__(6)
-const zlib = __node_require__(9)
-const ReadEntry = __node_require__(11)
-const WriteEntry = __node_require__(13)
+const MiniPass = __node_require__(6 /* 'minipass' */)
+const zlib = __node_require__(9 /* 'minizlib' */)
+const ReadEntry = __node_require__(11 /* './read-entry.js' */)
+const WriteEntry = __node_require__(13 /* './write-entry.js' */)
 const WriteEntrySync = WriteEntry.Sync
 const WriteEntryTar = WriteEntry.Tar
-const Yallist = __node_require__(20)
+const Yallist = __node_require__(20 /* 'yallist' */)
 const EOF = Buffer.alloc(1024)
 const ONSTAT = Symbol('onStat')
 const ENDED = Symbol('ended')
@@ -406,7 +406,7 @@ const ONDRAIN = Symbol('ondrain')
 
 const fs = require('fs')
 const path = require('path')
-const warner = __node_require__(17)
+const warner = __node_require__(17 /* './warn-mixin.js' */)
 
 const Pack = warner(class Pack extends MiniPass {
   constructor (opt) {
@@ -763,7 +763,7 @@ module.exports = Pack
 let B = Buffer
 /* istanbul ignore next */
 if (!B.alloc) {
-  B = __node_require__(5).Buffer
+  B = __node_require__(5 /* 'safe-buffer' */).Buffer
 }
 module.exports = B
 }],
@@ -834,7 +834,7 @@ SafeBuffer.allocUnsafeSlow = function (size) {
 [/* 6 */ 'minipass', '/index.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
 const EE = require('events')
-const Yallist = __node_require__(7)
+const Yallist = __node_require__(7 /* 'yallist' */)
 const EOF = Symbol('EOF')
 const MAYBE_EMIT_END = Symbol('maybeEmitEnd')
 const EMITTED_END = Symbol('emittedEnd')
@@ -861,7 +861,7 @@ const OBJECTMODE = Symbol('objectMode')
 let B = Buffer
 /* istanbul ignore next */
 if (!B.alloc) {
-  B = __node_require__(5).Buffer
+  B = __node_require__(5 /* 'safe-buffer' */).Buffer
 }
 
 module.exports = class MiniPass extends EE {
@@ -1583,7 +1583,7 @@ function Node (value, prev, next, list) {
 
 try {
   // add if support for Symbol.iterator is present
-  __node_require__(8)(Yallist)
+  __node_require__(8 /* './iterator.js' */)(Yallist)
 } catch (er) {}
 }],
 [/* 8 */ 'yallist', '/iterator.js', function(exports, require, module, __filename, __dirname, __meta) {
@@ -1603,8 +1603,8 @@ const assert = require('assert')
 const Buffer = require('buffer').Buffer
 const realZlib = require('zlib')
 
-const constants = exports.constants = __node_require__(10)
-const MiniPass = __node_require__(6)
+const constants = exports.constants = __node_require__(10 /* './constants.js' */)
+const MiniPass = __node_require__(6 /* 'minipass' */)
 
 const OriginalBufferConcat = Buffer.concat
 
@@ -1983,8 +1983,8 @@ module.exports = Object.freeze({
 }],
 [/* 11 */ 'tar', '/lib/read-entry.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
-const types = __node_require__(12)
-const MiniPass = __node_require__(6)
+const types = __node_require__(12 /* './types.js' */)
+const MiniPass = __node_require__(6 /* 'minipass' */)
 
 const SLURP = Symbol('slurp')
 module.exports = class ReadEntry extends MiniPass {
@@ -2125,15 +2125,15 @@ exports.code = new Map(Array.from(exports.name).map(kv => [kv[1], kv[0]]))
 }],
 [/* 13 */ 'tar', '/lib/write-entry.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
-const Buffer = __node_require__(4)
-const MiniPass = __node_require__(6)
-const Pax = __node_require__(14)
-const Header = __node_require__(15)
-const ReadEntry = __node_require__(11)
+const Buffer = __node_require__(4 /* './buffer.js' */)
+const MiniPass = __node_require__(6 /* 'minipass' */)
+const Pax = __node_require__(14 /* './pax.js' */)
+const Header = __node_require__(15 /* './header.js' */)
+const ReadEntry = __node_require__(11 /* './read-entry.js' */)
 const fs = require('fs')
 const path = require('path')
 
-const types = __node_require__(12)
+const types = __node_require__(12 /* './types.js' */)
 const maxReadSize = 16 * 1024 * 1024
 const PROCESS = Symbol('process')
 const FILE = Symbol('file')
@@ -2150,10 +2150,10 @@ const OPENFILE = Symbol('openfile')
 const ONOPENFILE = Symbol('onopenfile')
 const CLOSE = Symbol('close')
 const MODE = Symbol('mode')
-const warner = __node_require__(17)
-const winchars = __node_require__(18)
+const warner = __node_require__(17 /* './warn-mixin.js' */)
+const winchars = __node_require__(18 /* './winchars.js' */)
 
-const modeFix = __node_require__(19)
+const modeFix = __node_require__(19 /* './mode-fix.js' */)
 
 const WriteEntry = warner(class WriteEntry extends MiniPass {
   constructor (p, opt) {
@@ -2549,8 +2549,8 @@ module.exports = WriteEntry
 }],
 [/* 14 */ 'tar', '/lib/pax.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
-const Buffer = __node_require__(4)
-const Header = __node_require__(15)
+const Buffer = __node_require__(4 /* './buffer.js' */)
+const Header = __node_require__(15 /* './header.js' */)
 const path = require('path')
 
 class Pax {
@@ -2702,10 +2702,10 @@ module.exports = Pax
 // the data could not be faithfully encoded in a simple header.
 // (Also, check header.needPax to see if it needs a pax header.)
 
-const Buffer = __node_require__(4)
-const types = __node_require__(12)
+const Buffer = __node_require__(4 /* './buffer.js' */)
+const types = __node_require__(12 /* './types.js' */)
 const pathModule = require('path').posix
-const large = __node_require__(16)
+const large = __node_require__(16 /* './large-numbers.js' */)
 
 const SLURP = Symbol('slurp')
 const TYPE = Symbol('type')
@@ -3512,7 +3512,7 @@ function Node (value, prev, next, list) {
 
 try {
   // add if support for Symbol.iterator is present
-  __node_require__(21)(Yallist)
+  __node_require__(21 /* './iterator.js' */)(Yallist)
 } catch (er) {}
 }],
 [/* 21 */ 'yallist', '/iterator.js', function(exports, require, module, __filename, __dirname, __meta) {
@@ -3527,7 +3527,7 @@ module.exports = function (Yallist) {
 }],
 [/* 22 */ 'fs-minipass', '/index.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
-const MiniPass = __node_require__(6)
+const MiniPass = __node_require__(6 /* 'minipass' */)
 const EE = require('events').EventEmitter
 const fs = require('fs')
 
@@ -3916,16 +3916,16 @@ exports.WriteStreamSync = WriteStreamSync
 [/* 23 */ 'tar', '/lib/list.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
 
-const Buffer = __node_require__(4)
+const Buffer = __node_require__(4 /* './buffer.js' */)
 
 // XXX: This shares a lot in common with extract.js
 // maybe some DRY opportunity here?
 
 // tar -t
-const hlo = __node_require__(2)
-const Parser = __node_require__(24)
+const hlo = __node_require__(2 /* './high-level-opt.js' */)
+const Parser = __node_require__(24 /* './parse.js' */)
 const fs = require('fs')
-const fsm = __node_require__(22)
+const fsm = __node_require__(22 /* 'fs-minipass' */)
 const path = require('path')
 
 const t = module.exports = (opt_, files, cb) => {
@@ -4068,16 +4068,16 @@ const list = opt => new Parser(opt)
 //
 // ignored entries get .resume() called on them straight away
 
-const warner = __node_require__(17)
+const warner = __node_require__(17 /* './warn-mixin.js' */)
 const path = require('path')
-const Header = __node_require__(15)
+const Header = __node_require__(15 /* './header.js' */)
 const EE = require('events')
-const Yallist = __node_require__(20)
+const Yallist = __node_require__(20 /* 'yallist' */)
 const maxMetaEntrySize = 1024 * 1024
-const Entry = __node_require__(11)
-const Pax = __node_require__(14)
-const zlib = __node_require__(9)
-const Buffer = __node_require__(4)
+const Entry = __node_require__(11 /* './read-entry.js' */)
+const Pax = __node_require__(14 /* './pax.js' */)
+const zlib = __node_require__(9 /* 'minizlib' */)
+const Buffer = __node_require__(4 /* './buffer.js' */)
 
 const gzipHeader = Buffer.from([0x1f, 0x8b])
 const STATE = Symbol('state')
@@ -4472,15 +4472,15 @@ module.exports = warner(class Parser extends EE {
 }],
 [/* 25 */ 'tar', '/lib/replace.js', function(exports, require, module, __filename, __dirname, __meta) {
 'use strict'
-const Buffer = __node_require__(4)
+const Buffer = __node_require__(4 /* './buffer.js' */)
 
 // tar -r
-const hlo = __node_require__(2)
-const Pack = __node_require__(3)
-const Parse = __node_require__(24)
+const hlo = __node_require__(2 /* './high-level-opt.js' */)
+const Pack = __node_require__(3 /* './pack.js' */)
+const Parse = __node_require__(24 /* './parse.js' */)
 const fs = require('fs')
-const fsm = __node_require__(22)
-const t = __node_require__(23)
+const fsm = __node_require__(22 /* 'fs-minipass' */)
+const t = __node_require__(23 /* './list.js' */)
 const path = require('path')
 
 // starting at the head of the file, read a Header
@@ -4489,7 +4489,7 @@ const path = require('path')
 // and try again.
 // Write the new Pack stream starting there.
 
-const Header = __node_require__(15)
+const Header = __node_require__(15 /* './header.js' */)
 
 const r = module.exports = (opt_, files, cb) => {
   const opt = hlo(opt_)
@@ -4697,8 +4697,8 @@ const addFilesAsync = (p, files) => {
 
 // tar -u
 
-const hlo = __node_require__(2)
-const r = __node_require__(25)
+const hlo = __node_require__(2 /* './high-level-opt.js' */)
+const r = __node_require__(25 /* './replace.js' */)
 // just call tar.r with the filter and mtimeCache
 
 const u = module.exports = (opt_, files, cb) => {
@@ -4734,10 +4734,10 @@ const mtimeFilter = opt => {
 'use strict'
 
 // tar -x
-const hlo = __node_require__(2)
-const Unpack = __node_require__(28)
+const hlo = __node_require__(2 /* './high-level-opt.js' */)
+const Unpack = __node_require__(28 /* './unpack.js' */)
 const fs = require('fs')
-const fsm = __node_require__(22)
+const fsm = __node_require__(22 /* 'fs-minipass' */)
 const path = require('path')
 
 const x = module.exports = (opt_, files, cb) => {
@@ -4849,13 +4849,13 @@ const extract = opt => {
 
 const assert = require('assert')
 const EE = require('events').EventEmitter
-const Parser = __node_require__(24)
+const Parser = __node_require__(24 /* './parse.js' */)
 const fs = require('fs')
-const fsm = __node_require__(22)
+const fsm = __node_require__(22 /* 'fs-minipass' */)
 const path = require('path')
-const mkdir = __node_require__(29)
+const mkdir = __node_require__(29 /* './mkdir.js' */)
 const mkdirSync = mkdir.sync
-const wc = __node_require__(18)
+const wc = __node_require__(18 /* './winchars.js' */)
 
 const ONENTRY = Symbol('onEntry')
 const CHECKFS = Symbol('checkFs')
@@ -5474,10 +5474,10 @@ module.exports = Unpack
 // TODO: This should probably be a class, not functionally
 // passing around state in a gazillion args.
 
-const mkdirp = __node_require__(30)
+const mkdirp = __node_require__(30 /* 'mkdirp' */)
 const fs = require('fs')
 const path = require('path')
-const chownr = __node_require__(31)
+const chownr = __node_require__(31 /* 'chownr' */)
 
 class SymlinkError extends Error {
   constructor (symlink, path) {

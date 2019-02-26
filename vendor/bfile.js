@@ -1,6 +1,6 @@
 /*!
  * fs.js - promisified fs module for bcoin
- * Copyright (c) 2014-2017, Christopher Jeffrey (MIT License).
+ * Copyright (c) 2014-2019, Christopher Jeffrey (MIT License).
  * https://github.com/bcoin-org/bcoin
  */
 
@@ -15,11 +15,15 @@ const Path = require('path');
  * Constants
  */
 
+const hasOwnProperty = Object.prototype.hasOwnProperty;
+const hasPromises = hasOwnProperty.call(fs, 'promises');
 const parts = process.version.split(/[^\d]/);
 const version = (0
   + (parts[1] & 0xff) * 0x10000
   + (parts[2] & 0xff) * 0x00100
   + (parts[3] & 0xff) * 0x00001);
+
+let promises_ = null;
 
 /*
  * Helpers
@@ -29,32 +33,71 @@ function promisify(func) {
   if (!func)
     return undefined;
 
-  if (func === fs.read || func === fs.write) {
-    return function readOrWrite(fd, buf, off, len, pos) {
+  if (func === fs.read) {
+    return function read(fd, buffer, offset, length, position) {
       return new Promise(function(resolve, reject) {
-        func(fd, buf, off, len, pos, function(err, bytes, buf) {
+        const cb = function(err, bytes, buf) {
           if (err) {
             reject(err);
             return;
           }
           resolve(bytes);
-        });
+        };
+
+        try {
+          func(fd, buffer, offset, length, position, cb);
+        } catch (e) {
+          reject(e);
+        }
       });
     };
   }
 
-  return function(...args) {
+  if (func === fs.write) {
+    return function write(fd, buffer, offset, length, position) {
+      return new Promise(function(resolve, reject) {
+        const cb = function(err, bytes, buf) {
+          if (err) {
+            reject(err);
+            return;
+          }
+          resolve(bytes);
+        };
+
+        if (typeof buffer === 'string') {
+          // fs.write(fd, string[, position[, encoding]], callback);
+          if (length == null)
+            length = 'utf8';
+
+          try {
+            func(fd, buffer, offset, length, cb);
+          } catch (e) {
+            reject(e);
+          }
+        } else {
+          // fs.write(fd, buffer[, offset[, length[, position]]], callback);
+          try {
+            func(fd, buffer, offset, length, position, cb);
+          } catch (e) {
+            reject(e);
+          }
+        }
+      });
+    };
+  }
+
+  return function promisified(...args) {
     return new Promise(function(resolve, reject) {
-      args.push(function(err, result) {
+      const cb = function(err, result) {
         if (err) {
           reject(err);
           return;
         }
         resolve(result);
-      });
+      };
 
       try {
-        func.call(fs, ...args);
+        func(...args, cb);
       } catch (e) {
         reject(e);
       }
@@ -147,6 +190,8 @@ function errorPerm(message, syscall, path) {
  */
 
 exports.unsupported = false;
+exports.version = version;
+exports.hasPromises = hasPromises;
 exports.access = promisify(fs.access);
 exports.accessSync = fs.accessSync;
 exports.appendFile = promisify(fs.appendFile);
@@ -224,10 +269,189 @@ exports.writeSync = fs.writeSync;
 exports.writeFile = promisify(fs.writeFile);
 exports.writeFileSync = fs.writeFileSync;
 
-Object.defineProperty(exports, 'promises', {
-  enumerable: true,
-  get: () => fs.promises
+exports.F_OK = fs.F_OK || 0;
+exports.R_OK = fs.R_OK || 0;
+exports.W_OK = fs.W_OK || 0;
+exports.X_OK = fs.X_OK || 0;
+
+exports.Dirent = fs.Dirent;
+exports.Stats = fs.Stats;
+
+Object.defineProperties(exports, {
+  ReadStream: {
+    get() {
+      return fs.ReadStream;
+    },
+    set(val) {
+      fs.ReadStream = val;
+    }
+  },
+  WriteStream: {
+    get() {
+      return fs.WriteStream;
+    },
+    set(val) {
+      fs.WriteStream = val;
+    }
+  },
+  FileReadStream: {
+    get() {
+      return fs.FileReadStream;
+    },
+    set(val) {
+      fs.FileReadStream = val;
+    }
+  },
+  FileWriteStream: {
+    get() {
+      return fs.FileWriteStream;
+    },
+    set(val) {
+      fs.FileWriteStream = val;
+    }
+  },
+  promises: {
+    configurable: true,
+    enumerable: false,
+    get() {
+      if (!promises_) {
+        if (hasPromises) {
+          const emit = process.emitWarning;
+          process.emitWarning = () => {};
+          try {
+            promises_ = fs.promises;
+          } finally {
+            process.emitWarning = emit;
+          }
+        } else {
+          promises_ = {
+            access: exports.access,
+            appendFile: exports.appendFile,
+            chmod: exports.chmod,
+            chown: exports.chown,
+            copyFile: exports.copyFile,
+            lchmod: exports.lchmod,
+            lchown: exports.lchown,
+            link: exports.link,
+            lstat: exports.lstat,
+            mkdir: exports.mkdir,
+            mkdtemp: exports.mkdtemp,
+            open: exports.openHandle,
+            readdir: exports.readdir,
+            readFile: exports.readFile,
+            readlink: exports.readlink,
+            realpath: exports.realpath,
+            rename: exports.rename,
+            rmdir: exports.rmdir,
+            stat: exports.stat,
+            symlink: exports.symlink,
+            truncate: exports.truncate,
+            unlink: exports.unlink,
+            utimes: exports.utimes,
+            writeFile: exports.writeFile
+          };
+        }
+
+        promises_ = Object.assign(Object.create(exports), promises_);
+
+        ({ __proto__: promises_ });
+      }
+
+      return promises_;
+    }
+  }
 });
+
+/**
+ * FileHandle
+ */
+
+class FileHandle {
+  constructor(fd) {
+    this._fd = fd;
+  }
+
+  getAsyncId() {
+    return -1;
+  }
+
+  get fd() {
+    return this._fd;
+  }
+
+  get compat() {
+    return true;
+  }
+
+  appendFile(data, options) {
+    return exports.appendFile(this._fd, data, options);
+  }
+
+  chmod(mode) {
+    return exports.fchmod(this._fd, mode);
+  }
+
+  chown(uid, gid) {
+    return exports.fchown(this._fd, uid, gid);
+  }
+
+  close() {
+    return exports.close(this._fd);
+  }
+
+  datasync() {
+    return exports.fdatasync(this._fd);
+  }
+
+  async read(buffer, offset, length, position) {
+    const bytesRead = await exports.read(this._fd, buffer,
+                                         offset, length,
+                                         position);
+    return { bytesRead, buffer };
+  }
+
+  readFile(options) {
+    return exports.readFile(this._fd, options);
+  }
+
+  stat(options) {
+    if (options != null)
+      return exports.fstat(this._fd, options);
+    return exports.fstat(this._fd);
+  }
+
+  sync() {
+    return exports.fsync(this._fd);
+  }
+
+  truncate(len) {
+    return exports.ftruncate(this._fd, len);
+  }
+
+  utimes(atime, mtime) {
+    return exports.futimes(this._fd, atime, mtime);
+  }
+
+  async write(buffer, offset, length, position) {
+    const bytesWritten = await exports.write(this._fd, buffer,
+                                             offset, length,
+                                             position);
+    return { bytesWritten, buffer };
+  }
+
+  writeFile(data, options) {
+    return exports.writeFile(this._fd, options);
+  }
+}
+
+exports.openHandle = async function openHandle(...args) {
+  const fd = await exports.open(...args);
+  return new FileHandle(fd);
+};
+
+exports.openFile = function openFile(...args) {
+  return exports.promises.open(...args);
+};
 
 /*
  * Extra
@@ -842,14 +1066,14 @@ if (version < 0x0a0c00) {
       }
     }
 
+    if (mode != null && (mode >>> 0) !== mode)
+      throw new TypeError('"mode" must be an integer.');
+
     if (typeof recursive !== 'boolean')
       throw new TypeError('"recursive" must be a boolean.');
 
-    if (mode != null) {
-      if ((mode >>> 0) !== mode)
-        throw new TypeError('"mode" must be an integer.');
+    if (mode != null)
       return [[path, mode], recursive];
-    }
 
     return [[path], recursive];
   };

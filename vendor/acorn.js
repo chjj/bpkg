@@ -6191,7 +6191,7 @@ function __node_require__(id) {
       loaded: false,
       children: module.children,
       paths: module.paths,
-      require: module.require
+      require: _require
     };
   }
 

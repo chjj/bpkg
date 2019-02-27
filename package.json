@@ -3,6 +3,9 @@
   "version": "0.2.1",
   "description": "Bundler for node.js",
   "keywords": [
+    "bundle",
+    "bundler",
+    "package"
   ],
   "license": "MIT",
   "repository": "git://github.com/chjj/bpkg.git",

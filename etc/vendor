@@ -70,12 +70,6 @@ async function buildModule(name, path, browser) {
   const input = resolveModule(name);
   const output = resolve(ROOT, path);
 
-  if (name === 'bfile') {
-    const file = resolve(input, 'lib', 'fs.js');
-    fs.copyFileSync(file, output);
-    return;
-  }
-
   await bpkg({
     env: 'node',
     time: DATE,

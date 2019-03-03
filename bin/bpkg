@@ -580,7 +580,7 @@ function normalizeObject(obj, list) {
   const code = await bpkg(options);
 
   if (code)
-    stdout.write(code + '\n');
+    stdout.write(code);
 
   return 0;
 })().then((code) => {

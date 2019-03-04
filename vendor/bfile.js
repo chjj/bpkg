@@ -2108,60 +2108,71 @@ async function traverse(root, options, cb) {
 
   const path = fromPath(root);
 
-  if (typeof options === 'function')
-    [options, cb] = [null, options];
+  if (typeof options === 'function'
+      && typeof cb !== 'function') {
+    [options, cb] = [cb, options];
+  }
 
   if (typeof cb !== 'function')
     throw new ArgError('callback', cb, 'function');
 
-  const [follow, maxDepth] = parseWalkOptions(options);
+  const opt = parseWalkOptions(options);
   const seen = new Set();
 
   await (async function next(path, depth) {
-    const stat = await statsTry(path, options);
+    const stat = await statsTry(path, opt.stat);
+    const isDir = stat ? stat.isDirectory() : false;
 
-    let result = cb(path, stat, depth);
-
-    if (result instanceof Promise)
-      result = await result;
-
-    if (result === false)
-      return false;
-
-    if (stat && stat.isDirectory()) {
-      if (depth === maxDepth)
+    if (opt.filter) {
+      if (!await opt.filter(path, stat, depth))
         return true;
+    }
 
-      if (follow) {
-        let real = resolve(path);
+    if (!opt.filesOnly || !isDir) {
+      let result = cb(path, stat, depth);
 
-        try {
-          real = await fs.realpath(real);
-        } catch (e) {
-          if (!isNoEntry(e))
-            throw e;
-        }
+      if (result instanceof Promise)
+        result = await result;
 
-        if (seen.has(real))
-          return true;
+      if (result === false)
+        return false;
+    }
 
-        seen.add(real);
-      }
+    if (!isDir)
+      return true;
 
-      let list = null;
+    if (depth === opt.maxDepth)
+      return true;
+
+    if (opt.follow) {
+      let real = resolve(path);
 
       try {
-        list = await fs.readdir(path);
+        real = await fs.realpath(real);
       } catch (e) {
-        if (isNoEntry(e))
-          return true;
-        throw e;
+        if (!isNoEntry(e))
+          throw e;
       }
 
-      for (const name of list) {
-        if (!await next(join(path, name), depth + 1, cb))
-          return false;
-      }
+      if (seen.has(real))
+        return true;
+
+      seen.add(real);
+    }
+
+    let list = null;
+
+    try {
+      list = await fs.readdir(path);
+    } catch (e) {
+      if (isNoEntry(e))
+        return true;
+      throw e;
+    }
+
+    for (const name of list) {
+      if (!await next(join(path, name), depth + 1, cb))
+        return false;
     }
 
     return true;
@@ -2169,8 +2180,10 @@ async function traverse(root, options, cb) {
 }
 
 function traverseSync(root, options, cb) {
-  if (typeof options === 'function')
-    [options, cb] = [null, options];
+  if (typeof options === 'function'
+      && typeof cb !== 'function') {
+    [options, cb] = [cb, options];
+  }
 
   if (typeof cb !== 'function')
     throw new ArgError('callback', cb, 'function');
@@ -2191,9 +2204,9 @@ function walk(root, options) {
     paths.push(root);
   }
 
-  const [follow, maxDepth] = parseWalkOptions(options);
+  const opt = parseWalkOptions(options);
 
-  return new AsyncWalker(paths, follow, maxDepth, options);
+  return new AsyncWalker(paths, opt);
 }
 
 function* walkSync(root, options) {
@@ -2204,47 +2217,55 @@ function* walkSync(root, options) {
   }
 
   const path = fromPath(root);
-  const [follow, maxDepth] = parseWalkOptions(options);
+  const opt = parseWalkOptions(options);
   const seen = new Set();
 
   yield* (function* next(path, depth) {
-    const stat = statsTrySync(path, options);
+    const stat = statsTrySync(path, opt.stat);
+    const isDir = stat ? stat.isDirectory() : false;
 
-    yield [path, stat, depth];
-
-    if (stat && stat.isDirectory()) {
-      if (depth === maxDepth)
+    if (opt.filter) {
+      if (!opt.filter(path, stat, depth))
         return;
+    }
 
-      if (follow) {
-        let real = resolve(path);
+    if (!opt.filesOnly || !isDir)
+      yield [path, stat, depth];
 
-        try {
-          real = fs.realpathSync(real);
-        } catch (e) {
-          if (!isNoEntry(e))
-            throw e;
-        }
+    if (!isDir)
+      return;
 
-        if (seen.has(real))
-          return;
+    if (depth === opt.maxDepth)
+      return;
 
-        seen.add(real);
-      }
-
-      let list = null;
+    if (opt.follow) {
+      let real = resolve(path);
 
       try {
-        list = fs.readdirSync(path);
+        real = fs.realpathSync(real);
       } catch (e) {
-        if (isNoEntry(e))
-          return;
-        throw e;
+        if (!isNoEntry(e))
+          throw e;
       }
 
-      for (const name of list)
-        yield* next(join(path, name), depth + 1);
+      if (seen.has(real))
+        return;
+
+      seen.add(real);
     }
+
+    let list = null;
+
+    try {
+      list = fs.readdirSync(path);
+    } catch (e) {
+      if (isNoEntry(e))
+        return;
+      throw e;
+    }
+
+    for (const name of list)
+      yield* next(join(path, name), depth + 1);
   })(path, 0);
 }
 
@@ -2253,11 +2274,13 @@ function* walkSync(root, options) {
  */
 
 class AsyncWalker {
-  constructor(paths, follow, maxDepth, options) {
+  constructor(paths, options) {
     this.stack = [paths];
-    this.follow = follow;
-    this.maxDepth = maxDepth;
-    this.options = options;
+    this.filesOnly = options.filesOnly;
+    this.filter = options.filter;
+    this.follow = options.follow;
+    this.maxDepth = options.maxDepth;
+    this.options = options.stat;
     this.seen = new Set();
     this.depth = 0;
   }
@@ -2347,9 +2370,20 @@ class AsyncWalker {
       return { value: undefined, done: true };
 
     const stat = await statsTry(path, this.options);
+    const isDir = stat ? stat.isDirectory() : false;
+
+    if (this.filter) {
+      if (!await this.filter(path, stat, depth)) {
+        this.pop();
+        return this.next();
+      }
+    }
 
     if (!await this.read(path, stat))
       this.pop();
+
+    if (this.filesOnly && isDir)
+      return this.next();
 
     return { value: [path, stat, depth], done: false };
   }
@@ -2371,13 +2405,16 @@ function isNoEntry(err) {
 
 function parseStatsOptions(options) {
   if (options == null)
-    return [false, undefined];
+    options = false;
 
   if (typeof options === 'boolean')
     return [options, undefined];
 
-  if (typeof options !== 'object')
-    throw new ArgError('options', options, 'object');
+  if (typeof options !== 'object') {
+    throw new ArgError('options', options, ['null',
+                                            'boolean',
+                                            'object']);
+  }
 
   let {follow, bigint} = options;
 
@@ -2398,15 +2435,30 @@ function parseStatsOptions(options) {
 
 function parseWalkOptions(options) {
   if (options == null)
-    return [false, -1];
+    options = false;
 
-  if (typeof options === 'boolean')
-    return [options, -1];
+  if (typeof options === 'function')
+    options = { filter: options };
+  else if (typeof options === 'boolean')
+    options = { follow: options };
+  else if (typeof options === 'number')
+    options = { maxDepth: options };
 
-  if (typeof options !== 'object')
-    throw new ArgError('options', options, 'object');
+  if (typeof options !== 'object') {
+    throw new ArgError('options', options, ['null',
+                                            'function',
+                                            'boolean',
+                                            'number',
+                                            'object']);
+  }
 
-  let {follow, maxDepth} = options;
+  let {filesOnly, filter, follow, maxDepth} = options;
+
+  if (filesOnly == null)
+    filesOnly = false;
+
+  if (filter == null)
+    filter = null;
 
   if (follow == null)
     follow = false;
@@ -2414,13 +2466,25 @@ function parseWalkOptions(options) {
   if (maxDepth == null)
     maxDepth = -1;
 
+  if (filter != null && typeof filter !== 'function')
+    throw new ArgError('filter', filter, 'function');
+
+  if (typeof filesOnly !== 'boolean')
+    throw new ArgError('filesOnly', filesOnly, 'boolean');
+
   if (typeof follow !== 'boolean')
     throw new ArgError('follow', follow, 'boolean');
 
   if (maxDepth !== -1 && (maxDepth >>> 0) !== maxDepth)
     throw new ArgError('maxDepth', maxDepth, 'integer');
 
-  return [follow, maxDepth];
+  return {
+    filesOnly,
+    filter,
+    follow,
+    maxDepth,
+    stat: options
+  };
 }
 
 /*

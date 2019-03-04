@@ -589,6 +589,7 @@ function promisify(func) {
 function isPath(path) {
   return typeof path === 'string'
       || Buffer.isBuffer(path)
+      || (path instanceof Uint8Array)
       || ((path instanceof url.URL)
           && path.protocol === 'file:');
 }
@@ -2100,14 +2101,6 @@ function statsTrySync(file, options) {
  */
 
 async function traverse(root, options, cb) {
-  if (Array.isArray(root)) {
-    for (const file of root)
-      await traverse(fromPath(file), options, cb);
-    return;
-  }
-
-  const path = fromPath(root);
-
   if (typeof options === 'function'
       && typeof cb !== 'function') {
     [options, cb] = [cb, options];
@@ -2116,67 +2109,19 @@ async function traverse(root, options, cb) {
   if (typeof cb !== 'function')
     throw new ArgError('callback', cb, 'function');
 
-  const opt = parseWalkOptions(options);
-  const seen = new Set();
+  const iter = walk(root, options);
 
-  await (async function next(path, depth) {
-    const stat = await statsTry(path, opt.stat);
-    const isDir = stat ? stat.isDirectory() : false;
+  for (;;) {
+    const {value, done} = await iter.next();
 
-    if (opt.filter) {
-      if (!await opt.filter(path, stat, depth))
-        return true;
-    }
+    if (done)
+      break;
 
-    if (!opt.filesOnly || !isDir) {
-      let result = cb(path, stat, depth);
+    const [file, stat, depth] = value;
 
-      if (result instanceof Promise)
-        result = await result;
-
-      if (result === false)
-        return false;
-    }
-
-    if (!isDir)
-      return true;
-
-    if (depth === opt.maxDepth)
-      return true;
-
-    if (opt.follow) {
-      let real = resolve(path);
-
-      try {
-        real = await fs.realpath(real);
-      } catch (e) {
-        if (!isNoEntry(e))
-          throw e;
-      }
-
-      if (seen.has(real))
-        return true;
-
-      seen.add(real);
-    }
-
-    let list = null;
-
-    try {
-      list = await fs.readdir(path);
-    } catch (e) {
-      if (isNoEntry(e))
-        return true;
-      throw e;
-    }
-
-    for (const name of list) {
-      if (!await next(join(path, name), depth + 1, cb))
-        return false;
-    }
-
-    return true;
-  })(path, 0);
+    if ((await cb(file, stat, depth)) === false)
+      break;
+  }
 }
 
 function traverseSync(root, options, cb) {
@@ -2195,14 +2140,13 @@ function traverseSync(root, options, cb) {
 }
 
 function walk(root, options) {
+  if (!Array.isArray(root))
+    root = [root];
+
   const paths = [];
 
-  if (Array.isArray(root)) {
-    for (let i = root.length - 1; i >= 0; i--)
-      paths.push(fromPath(root[i]));
-  } else {
-    paths.push(root);
-  }
+  for (let i = root.length - 1; i >= 0; i--)
+    paths.push(fromPath(root[i]));
 
   const opt = parseWalkOptions(options);
 
@@ -2210,35 +2154,148 @@ function walk(root, options) {
 }
 
 function* walkSync(root, options) {
-  if (Array.isArray(root)) {
-    for (const file of root)
-      yield* walkSync(fromPath(file), options);
-    return;
+  if (!Array.isArray(root))
+    root = [root];
+
+  const opt = parseWalkOptions(options);
+
+  for (const file of root)
+    yield* syncWalker(file, opt);
+}
+
+/**
+ * AsyncWalker
+ */
+
+class AsyncWalker {
+  constructor(paths, options) {
+    this.stack = [paths];
+    this.filesOnly = options.filesOnly;
+    this.filter = options.filter;
+    this.follow = options.follow;
+    this.maxDepth = options.maxDepth;
+    this.options = options.stat;
+    this.seen = new Set();
+    this.depth = 0;
   }
 
+  [ASYNC_ITERATOR]() {
+    return this;
+  }
+
+  push(items) {
+    this.stack.push(items);
+    this.depth += 1;
+  }
+
+  pop() {
+    for (;;) {
+      if (this.stack.length === 0)
+        return null;
+
+      const items = this.stack[this.stack.length - 1];
+
+      if (items.length === 0) {
+        this.stack.pop();
+        this.depth -= 1;
+        if (this.depth === 0)
+          this.seen.clear();
+        continue;
+      }
+
+      return items.pop();
+    }
+  }
+
+  async read(path, dir, depth) {
+    if (!dir || depth === this.maxDepth)
+      return;
+
+    if (this.follow) {
+      let real = resolve(path);
+
+      try {
+        real = await fs.realpath(real);
+      } catch (e) {
+        if (!isNoEntry(e))
+          throw e;
+      }
+
+      if (this.seen.has(real))
+        return;
+
+      this.seen.add(real);
+    }
+
+    let list = null;
+
+    try {
+      list = await fs.readdir(path);
+    } catch (e) {
+      if (isNoEntry(e))
+        return;
+      throw e;
+    }
+
+    if (list.length === 0)
+      return;
+
+    const items = [];
+
+    for (let i = list.length - 1; i >= 0; i--)
+      items.push(join(path, list[i]));
+
+    this.push(items);
+  }
+
+  async next() {
+    const path = this.pop();
+    const depth = this.depth;
+
+    if (path == null)
+      return { value: undefined, done: true };
+
+    const stat = await statsTry(path, this.options);
+    const dir = stat ? stat.isDirectory() : false;
+
+    if (this.filter) {
+      if (!await this.filter(path, stat, depth))
+        return this.next();
+    }
+
+    await this.read(path, dir, depth);
+
+    if (this.filesOnly && dir)
+      return this.next();
+
+    return { value: [path, stat, depth], done: false };
+  }
+}
+
+/*
+ * SyncWalker
+ */
+
+function* syncWalker(root, options) {
   const path = fromPath(root);
-  const opt = parseWalkOptions(options);
   const seen = new Set();
 
   yield* (function* next(path, depth) {
-    const stat = statsTrySync(path, opt.stat);
-    const isDir = stat ? stat.isDirectory() : false;
+    const stat = statsTrySync(path, options.stat);
+    const dir = stat ? stat.isDirectory() : false;
 
-    if (opt.filter) {
-      if (!opt.filter(path, stat, depth))
+    if (options.filter) {
+      if (!options.filter(path, stat, depth))
         return;
     }
 
-    if (!opt.filesOnly || !isDir)
+    if (!options.filesOnly || !dir)
       yield [path, stat, depth];
 
-    if (!isDir)
+    if (!dir || depth === options.maxDepth)
       return;
 
-    if (depth === opt.maxDepth)
-      return;
-
-    if (opt.follow) {
+    if (options.follow) {
       let real = resolve(path);
 
       try {
@@ -2267,126 +2324,6 @@ function* walkSync(root, options) {
     for (const name of list)
       yield* next(join(path, name), depth + 1);
   })(path, 0);
-}
-
-/**
- * AsyncWalker
- */
-
-class AsyncWalker {
-  constructor(paths, options) {
-    this.stack = [paths];
-    this.filesOnly = options.filesOnly;
-    this.filter = options.filter;
-    this.follow = options.follow;
-    this.maxDepth = options.maxDepth;
-    this.options = options.stat;
-    this.seen = new Set();
-    this.depth = 0;
-  }
-
-  [ASYNC_ITERATOR]() {
-    return this;
-  }
-
-  get() {
-    if (this.stack.length === 0)
-      return null;
-
-    const items = this.stack[this.stack.length - 1];
-
-    if (items.length === 0)
-      return null;
-
-    return items.pop();
-  }
-
-  pop() {
-    if (this.stack.length === 0)
-      return;
-
-    const items = this.stack[this.stack.length - 1];
-
-    if (items.length === 0) {
-      this.stack.pop();
-      this.depth -= 1;
-    }
-  }
-
-  async read(path, stat) {
-    if (!stat || !stat.isDirectory())
-      return false;
-
-    if (this.depth === this.maxDepth)
-      return false;
-
-    if (this.follow) {
-      let real = resolve(path);
-
-      try {
-        real = await fs.realpath(real);
-      } catch (e) {
-        if (!isNoEntry(e))
-          throw e;
-      }
-
-      if (this.seen.has(real))
-        return false;
-
-      this.seen.add(real);
-    }
-
-    let list = null;
-
-    try {
-      list = await fs.readdir(path);
-    } catch (e) {
-      if (isNoEntry(e))
-        return false;
-      throw e;
-    }
-
-    if (list.length === 0)
-      return false;
-
-    const items = [];
-
-    for (let i = list.length - 1; i >= 0; i--)
-      items.push(join(path, list[i]));
-
-    this.stack.push(items);
-    this.depth += 1;
-
-    return true;
-  }
-
-  async next() {
-    this.pop();
-
-    const depth = this.depth;
-    const path = this.get();
-
-    if (path == null)
-      return { value: undefined, done: true };
-
-    const stat = await statsTry(path, this.options);
-    const isDir = stat ? stat.isDirectory() : false;
-
-    if (this.filter) {
-      if (!await this.filter(path, stat, depth)) {
-        this.pop();
-        return this.next();
-      }
-    }
-
-    if (!await this.read(path, stat))
-      this.pop();
-
-    if (this.filesOnly && isDir)
-      return this.next();
-
-    return { value: [path, stat, depth], done: false };
-  }
 }
 
 /*

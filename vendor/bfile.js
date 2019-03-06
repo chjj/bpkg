@@ -69,8 +69,16 @@ fs.lstatTry = extra.lstatTry;
 fs.lstatTrySync = extra.lstatTrySync;
 fs.mkdirp = extra.mkdirp;
 fs.mkdirpSync = extra.mkdirpSync;
-fs.rimraf = extra.rimraf;
-fs.rimrafSync = extra.rimrafSync;
+fs.move = extra.move;
+fs.moveSync = extra.moveSync;
+fs.outputFile = extra.outputFile;
+fs.outputFileSync = extra.outputFileSync;
+fs.readJSON = extra.readJSON;
+fs.readJSONSync = extra.readJSONSync;
+fs.remove = extra.remove;
+fs.removeSync = extra.removeSync;
+fs.rimraf = extra.remove; // Compat.
+fs.rimrafSync = extra.removeSync; // Compat.
 fs.statTry = extra.statTry;
 fs.statTrySync = extra.statTrySync;
 fs.stats = extra.stats;
@@ -81,6 +89,8 @@ fs.traverse = extra.traverse;
 fs.traverseSync = extra.traverseSync;
 fs.walk = extra.walk;
 fs.walkSync = extra.walkSync;
+fs.writeJSON = extra.writeJSON;
+fs.writeJSONSync = extra.writeJSONSync;
 
 /*
  * Promises
@@ -238,8 +248,11 @@ let HAS_WRITE_PENDING = version >= 0x0b0200;
 // For whenever promises are marked non-experimental.
 let HAS_STABLE_PROMISES = false;
 
-// The current highest modern version (11.2.0).
-let HAS_ALL = HAS_WRITE_PENDING
+// The current highest modern version (11.1.0).
+// This _would_ be based on the value of HAS_WRITE_PENDING
+// instead of HAS_OPTIONAL_FLAGS, but we don't create
+// fallback for HAS_WRITE_PENDING right now.
+let HAS_ALL = HAS_OPTIONAL_FLAGS
            && HAS_COPY_FILE_IMPL
            && HAS_REALPATH_NATIVE_IMPL
            && HAS_PROMISES_IMPL
@@ -533,7 +546,6 @@ Object.defineProperties(exports, {
 'use strict';
 
 const {resolve} = require('path');
-const url = require('url');
 const {ArgError} = __node_require__(6 /* './error' */);
 
 /*
@@ -542,6 +554,8 @@ const {ArgError} = __node_require__(6 /* './error' */);
 
 const WINDOWS = process.platform === 'win32';
 const HAS_SHARED_ARRAY_BUFFER = typeof SharedArrayBuffer === 'function';
+
+let url = null;
 
 /*
  * Utils
@@ -566,7 +580,7 @@ function call(func, args) {
 
 function promisify(func) {
   if (!func)
-    return undefined;
+    return null;
 
   return function promisified(...args) {
     return new Promise(function(resolve, reject) {
@@ -610,6 +624,18 @@ function fromPath(path) {
   throw new ArgError('path', path, ['string', 'Buffer', 'URL']);
 }
 
+function fromPaths(paths) {
+  if (!Array.isArray(paths))
+    return [fromPath(paths)];
+
+  const out = [];
+
+  for (const path of paths)
+    out.push(fromPath(path));
+
+  return out;
+}
+
 function toBuffer(data) {
   if (Buffer.isBuffer(data))
     return data;
@@ -632,6 +658,9 @@ function toBuffer(data) {
  */
 
 function fileURLToPath(uri) {
+  if (!url)
+    url = require('url');
+
   if (url.fileURLToPath)
     return resolve(url.fileURLToPath(uri), '.');
 
@@ -748,6 +777,7 @@ exports.call = call;
 exports.promisify = promisify;
 exports.isPath = isPath;
 exports.fromPath = fromPath;
+exports.fromPaths = fromPaths;
 exports.toBuffer = toBuffer;
 }],
 [/* 6 */ 'bfile', '/lib/error.js', function(exports, require, module, __filename, __dirname, __meta) {
@@ -981,6 +1011,40 @@ if (!features.HAS_RECURSIVE_MKDIR) {
 
 if (!features.HAS_OPTIONAL_FLAGS)
   fs.open = compat.open;
+
+// A few things still need patching even if we have native promises.
+if (features.HAS_PROMISES_IMPL && !features.HAS_OPTIONAL_FLAGS) {
+  const getter = Object.getOwnPropertyDescriptor(fs, 'promises').get;
+
+  let promises = null;
+
+  Object.defineProperty(fs, 'promises', {
+    configurable: true,
+    enumerable: false,
+    get() {
+      if (promises)
+        return promises;
+
+      promises = compat.clonePromises(getter());
+
+      if (!features.HAS_DIRENT_IMPL)
+        promises.readdir = compat.promises.readdir;
+
+      if (!features.HAS_RW_TYPED_ARRAY) {
+        promises.writeFile = compat.promises.writeFile;
+        compat.patchTypedArray(promises);
+      }
+
+      if (!features.HAS_RECURSIVE_MKDIR)
+        promises.mkdir = compat.promises.mkdir;
+
+      if (!features.HAS_OPTIONAL_FLAGS)
+        compat.patchOpenFlags(promises);
+
+      return promises;
+    }
+  });
+}
 
 /*
  * Expose
@@ -1561,7 +1625,6 @@ class FileHandle {
  */
 
 const promises = {
-  FileHandle,
   access: promisify(fs.access),
   appendFile: promisify(fs.appendFile),
   chmod: promisify(fs.chmod),
@@ -1590,6 +1653,100 @@ const promises = {
   utimes: promisify(fs.utimes),
   writeFile
 };
+
+/*
+ * Promise Patches
+ */
+
+function clonePromises(promises) {
+  return {
+    access: promises.access,
+    appendFile: promises.appendFile,
+    chmod: promises.chmod,
+    chown: promises.chown,
+    copyFile: promises.copyFile,
+    lchmod: promises.lchmod,
+    lchown: promises.lchown,
+    link: promises.link,
+    lstat: promises.lstat,
+    mkdir: promises.mkdir,
+    mkdtemp: promises.mkdtemp,
+    open: promises.open,
+    readdir: promises.readdir,
+    readFile: promises.readFile,
+    readlink: promises.readlink,
+    realpath: promises.realpath,
+    rename: promises.rename,
+    rmdir: promises.rmdir,
+    stat: promises.stat,
+    symlink: promises.symlink,
+    truncate: promises.truncate,
+    unlink: promises.unlink,
+    utimes: promises.utimes,
+    writeFile: promises.watchFile
+  };
+}
+
+function patchTypedArray(promises) {
+  const {open} = promises;
+
+  // Insanity? Maybe.
+  //
+  // I don't like changing anything global.
+  // May be worth wrapping FileHandle with
+  // a new class in order to patch it.
+  let inject = (handle) => {
+    const FileHandle = handle.constructor;
+    const proto = FileHandle.prototype;
+    const {read, write, writeFile} = proto;
+
+    if (!FileHandle.__hasPatch) {
+      // eslint-disable-next-line
+      proto.read = function _read(...args) {
+        args[0] = toBuffer(args[0]);
+        return read.call(this, ...args);
+      };
+
+      // eslint-disable-next-line
+      proto.write = function _write(...args) {
+        if (typeof args[0] !== 'string')
+          args[0] = toBuffer(args[0]);
+
+        return write.call(this, ...args);
+      };
+
+      // eslint-disable-next-line
+      proto.writeFile = function _writeFile(...args) {
+        if (typeof args[0] !== 'string')
+          args[0] = toBuffer(args[0]);
+
+        return writeFile.call(this, ...args);
+      };
+
+      FileHandle.__hasPatch = true;
+    }
+
+    inject = x => x;
+
+    return handle;
+  };
+
+  // eslint-disable-next-line
+  promises.open = async function _open(...args) {
+    return inject(await open(...args));
+  };
+}
+
+function patchOpenFlags(promises) {
+  const {open} = promises;
+
+  // eslint-disable-next-line
+  promises.open = async function _open(...args) {
+    if (args[1] == null)
+      args[1] = 'r';
+    return open(...args);
+  };
+}
 
 /*
  * Expose
@@ -1622,6 +1779,9 @@ exports.writeSync = writeSync;
 exports.writeFile = writeFile;
 exports.writeFileSync = writeFileSync;
 exports.promises = promises;
+exports.clonePromises = clonePromises;
+exports.patchTypedArray = patchTypedArray;
+exports.patchOpenFlags = patchOpenFlags;
 }],
 [/* 9 */ 'bfile', '/lib/extra.js', function(exports, require, module, __filename, __dirname, __meta) {
 /*!
@@ -1633,10 +1793,12 @@ exports.promises = promises;
 'use strict';
 
 const path = require('path');
-const {ArgError, FSError} = __node_require__(6 /* './error' */);
+const error = __node_require__(6 /* './error' */);
 const fs = __node_require__(2 /* './backend' */);
-const {fromPath} = __node_require__(5 /* './util' */);
-const {join, resolve} = path;
+const util = __node_require__(5 /* './util' */);
+const {dirname, join, resolve} = path;
+const {ArgError, FSError} = error;
+const {fromPath, fromPaths} = util;
 const {EEXIST, EPERM} = FSError;
 
 /*
@@ -1644,50 +1806,55 @@ const {EEXIST, EPERM} = FSError;
  */
 
 const ASYNC_ITERATOR = Symbol.asyncIterator || 'asyncIterator';
+const PARSED_OPTIONS = Symbol('PARSED_OPTIONS');
+const DEFAULT_STRINGIFY_OPTIONS = [null, 2, '\n'];
 
 /*
- * Extra
+ * Copy
  */
 
-async function copy(src, dest, flags, filter) {
-  if (typeof flags === 'function')
-    [flags, filter] = [filter, flags];
+async function copy(src, dest, options) {
+  return _copy(fromPath(src),
+               fromPath(dest),
+               copyOptions(options),
+               new Set(),
+               0);
+}
 
-  if (flags == null)
-    flags = 0;
-
-  if (filter == null)
-    filter = async (src, stat) => true;
-
-  src = fromPath(src);
-  dest = fromPath(dest);
-
-  if ((flags >>> 0) !== flags)
-    throw new ArgError('flags', flags, 'integer');
-
-  if (typeof filter !== 'function')
-    throw new ArgError('filter', filter, 'function');
-
-  const overwrite = (flags & fs.constants.COPYFILE_EXCL) === 0;
-  const sstat = await fs.lstat(src);
+async function _copy(src, dest, options, seen, depth) {
+  const sstat = await stats(src, options.stats);
   const dstat = await lstatTry(dest);
 
   let ret = 0;
 
-  if (!overwrite && dstat)
+  if (!options.overwrite && dstat)
     throw new FSError(EEXIST, 'copy', dest);
 
-  if (dstat
-      && sstat.dev === dstat.dev
-      && sstat.ino === dstat.ino
-      && sstat.rdev === dstat.rdev) {
+  if (dstat && sstat.dev === dstat.dev && sstat.ino === dstat.ino)
     throw new FSError(EPERM, 'cannot copy file into itself', 'copy', dest);
+
+  if (options.filter) {
+    if (!await options.filter(src, sstat, depth))
+      return ret + 1;
   }
 
-  if (!await filter(src, sstat))
-    return ret + 1;
-
   if (sstat.isDirectory()) {
+    if (options.follow) {
+      let real = resolve(src);
+
+      try {
+        real = await fs.realpath(real);
+      } catch (e) {
+        if (!isNoEntry(e))
+          throw e;
+      }
+
+      if (seen.has(real))
+        return ret;
+
+      seen.add(real);
+    }
+
     const list = await fs.readdir(src);
 
     if (dstat) {
@@ -1697,11 +1864,15 @@ async function copy(src, dest, flags, filter) {
       await fs.mkdir(dest, sstat.mode);
     }
 
+    if (options.timestamps)
+      await fs.utimes(dest, sstat.atime, sstat.mtime);
+
     for (const name of list) {
-      ret += await copy(join(src, name),
-                        join(dest, name),
-                        flags,
-                        filter);
+      ret += await _copy(join(src, name),
+                         join(dest, name),
+                         options,
+                         seen,
+                         depth + 1);
     }
 
     return ret;
@@ -1721,6 +1892,9 @@ async function copy(src, dest, flags, filter) {
 
     await fs.symlink(await fs.readlink(src), dest);
 
+    if (options.timestamps)
+      await fs.utimes(dest, sstat.atime, sstat.mtime);
+
     return ret;
   }
 
@@ -1737,7 +1911,10 @@ async function copy(src, dest, flags, filter) {
         await fs.unlink(dest);
     }
 
-    await fs.copyFile(src, dest, flags);
+    await fs.copyFile(src, dest, options.flags);
+
+    if (options.timestamps)
+      await fs.utimes(dest, sstat.atime, sstat.mtime);
 
     return ret;
   }
@@ -1745,45 +1922,48 @@ async function copy(src, dest, flags, filter) {
   return ret + 1;
 }
 
-function copySync(src, dest, flags, filter) {
-  if (typeof flags === 'function')
-    [flags, filter] = [filter, flags];
+function copySync(src, dest, options) {
+  return _copySync(fromPath(src),
+                   fromPath(dest),
+                   copyOptions(options),
+                   new Set(),
+                   0);
+}
 
-  if (flags == null)
-    flags = 0;
-
-  if (filter == null)
-    filter = (src, stat) => true;
-
-  src = fromPath(src);
-  dest = fromPath(dest);
-
-  if ((flags >>> 0) !== flags)
-    throw new ArgError('flags', flags, 'integer');
-
-  if (typeof filter !== 'function')
-    throw new ArgError('filter', filter, 'function');
-
-  const overwrite = (flags & fs.constants.COPYFILE_EXCL) === 0;
-  const sstat = fs.lstatSync(src);
+function _copySync(src, dest, options, seen, depth) {
+  const sstat = statsSync(src, options.stats);
   const dstat = lstatTrySync(dest);
 
   let ret = 0;
 
-  if (!overwrite && dstat)
+  if (!options.overwrite && dstat)
     throw new FSError(EEXIST, 'copy', dest);
 
-  if (dstat
-      && sstat.dev === dstat.dev
-      && sstat.ino === dstat.ino
-      && sstat.rdev === dstat.rdev) {
+  if (dstat && sstat.dev === dstat.dev && sstat.ino === dstat.ino)
     throw new FSError(EPERM, 'cannot copy file into itself', 'copy', dest);
+
+  if (options.filter) {
+    if (!options.filter(src, sstat, depth))
+      return ret + 1;
   }
 
-  if (!filter(src, sstat))
-    return ret + 1;
-
   if (sstat.isDirectory()) {
+    if (options.follow) {
+      let real = resolve(src);
+
+      try {
+        real = fs.realpathSync(real);
+      } catch (e) {
+        if (!isNoEntry(e))
+          throw e;
+      }
+
+      if (seen.has(real))
+        return ret;
+
+      seen.add(real);
+    }
+
     const list = fs.readdirSync(src);
 
     if (dstat) {
@@ -1793,11 +1973,15 @@ function copySync(src, dest, flags, filter) {
       fs.mkdirSync(dest, sstat.mode);
     }
 
+    if (options.timestamps)
+      fs.utimesSync(dest, sstat.atime, sstat.mtime);
+
     for (const name of list) {
-      ret += copySync(join(src, name),
-                      join(dest, name),
-                      flags,
-                      filter);
+      ret += _copySync(join(src, name),
+                       join(dest, name),
+                       options,
+                       seen,
+                       depth + 1);
     }
 
     return ret;
@@ -1817,6 +2001,9 @@ function copySync(src, dest, flags, filter) {
 
     fs.symlinkSync(fs.readlinkSync(src), dest);
 
+    if (options.timestamps)
+      fs.utimesSync(dest, sstat.atime, sstat.mtime);
+
     return ret;
   }
 
@@ -1833,7 +2020,10 @@ function copySync(src, dest, flags, filter) {
         fs.unlinkSync(dest);
     }
 
-    fs.copyFileSync(src, dest, flags);
+    fs.copyFileSync(src, dest, options.flags);
+
+    if (options.timestamps)
+      fs.utimesSync(dest, sstat.atime, sstat.mtime);
 
     return ret;
   }
@@ -1903,15 +2093,85 @@ function mkdirpSync(dir, mode) {
   return fs.mkdirSync(dir, { mode, recursive: true });
 }
 
-async function rimraf(path, filter) {
-  if (filter == null)
-    filter = async (path, stat) => true;
+async function move(src, dest) {
+  try {
+    await fs.rename(src, dest);
+    return;
+  } catch (e) {
+    if (e.code !== 'EXDEV')
+      throw e;
+  }
 
-  path = fromPath(path);
+  await copy(src, dest, { timestamps: true });
+  await remove(src);
+}
 
-  if (typeof filter !== 'function')
-    throw new ArgError('filter', filter, 'function');
+function moveSync(src, dest) {
+  try {
+    fs.renameSync(src, dest);
+    return;
+  } catch (e) {
+    if (e.code !== 'EXDEV')
+      throw e;
+  }
 
+  copySync(src, dest, { timestamps: true });
+  removeSync(src);
+}
+
+async function outputFile(path, data, options) {
+  const file = fromPath(path);
+  const dir = dirname(file);
+
+  let mode = null;
+
+  if (options && typeof options === 'object')
+    mode = options.mode;
+
+  await fs.mkdirp(dir, mode);
+  await fs.writeFile(file, data, options);
+}
+
+function outputFileSync(path, data, options) {
+  const file = fromPath(path);
+  const dir = dirname(file);
+
+  let mode = null;
+
+  if (options && typeof options === 'object')
+    mode = options.mode;
+
+  fs.mkdirpSync(dir, mode);
+  fs.writeFileSync(file, data, options);
+}
+
+async function readJSON(path, options) {
+  const [reviver, opt] = readJSONOptions(options);
+  const text = await fs.readFile(path, opt);
+
+  return decodeJSON(text, reviver);
+}
+
+function readJSONSync(path, options) {
+  const [reviver, opt] = readJSONOptions(options);
+  const text = fs.readFileSync(path, opt);
+
+  return decodeJSON(text, reviver);
+}
+
+async function remove(paths, options) {
+  paths = fromPaths(paths);
+  options = removeOptions(options);
+
+  let ret = 0;
+
+  for (const path of paths)
+    ret += await _remove(path, options, 0);
+
+  return ret;
+}
+
+async function _remove(path, options, depth) {
   let ret = 0;
   let stat = null;
 
@@ -1923,8 +2183,10 @@ async function rimraf(path, filter) {
     throw e;
   }
 
-  if (!await filter(path, stat))
-    return ret + 1;
+  if (options.filter) {
+    if (!await options.filter(path, stat, depth))
+      return ret + 1;
+  }
 
   if (stat.isDirectory()) {
     let list = null;
@@ -1938,7 +2200,7 @@ async function rimraf(path, filter) {
     }
 
     for (const name of list)
-      ret += await rimraf(join(path, name), filter);
+      ret += await _remove(join(path, name), options, depth + 1);
 
     try {
       await fs.rmdir(path);
@@ -1962,15 +2224,19 @@ async function rimraf(path, filter) {
   return ret;
 }
 
-function rimrafSync(path, filter) {
-  if (filter == null)
-    filter = (path, stat) => true;
+function removeSync(paths, options) {
+  paths = fromPaths(paths);
+  options = removeOptions(options);
 
-  path = fromPath(path);
+  let ret = 0;
 
-  if (typeof filter !== 'function')
-    throw new ArgError('filter', filter, 'function');
+  for (const path of paths)
+    ret += _removeSync(path, options, 0);
 
+  return ret;
+}
+
+function _removeSync(path, options, depth) {
   let ret = 0;
   let stat = null;
 
@@ -1982,8 +2248,10 @@ function rimrafSync(path, filter) {
     throw e;
   }
 
-  if (!filter(path, stat))
-    return ret + 1;
+  if (options.filter) {
+    if (!options.filter(path, stat, depth))
+      return ret + 1;
+  }
 
   if (stat.isDirectory()) {
     let list = null;
@@ -1997,7 +2265,7 @@ function rimrafSync(path, filter) {
     }
 
     for (const name of list)
-      ret += rimrafSync(join(path, name), filter);
+      ret += _removeSync(join(path, name), options, depth + 1);
 
     try {
       fs.rmdirSync(path);
@@ -2042,38 +2310,33 @@ function statTrySync(...args) {
 }
 
 async function stats(file, options) {
-  let [follow, opt] = parseStatsOptions(options);
+  options = statsOptions(options);
 
-  // Avoid a bug with
-  // option parsing.
-  if (opt == null)
-    opt = {};
-
-  if (follow) {
+  if (options.follow) {
     try {
-      return await fs.stat(file, opt);
+      return await fs.stat(file, options.stat);
     } catch (e) {
       if (!isNoEntry(e))
         throw e;
     }
   }
 
-  return await fs.lstat(file, opt);
+  return await fs.lstat(file, options.stat);
 }
 
 function statsSync(file, options) {
-  const [follow, opt] = parseStatsOptions(options);
+  options = statsOptions(options);
 
-  if (follow) {
+  if (options.follow) {
     try {
-      return fs.statSync(file, opt);
+      return fs.statSync(file, options.stat);
     } catch (e) {
       if (!isNoEntry(e))
         throw e;
     }
   }
 
-  return fs.lstatSync(file, opt);
+  return fs.lstatSync(file, options.stat);
 }
 
 async function statsTry(file, options) {
@@ -2100,7 +2363,7 @@ function statsTrySync(file, options) {
  * Traversal
  */
 
-async function traverse(root, options, cb) {
+async function traverse(paths, options, cb) {
   if (typeof options === 'function'
       && typeof cb !== 'function') {
     [options, cb] = [cb, options];
@@ -2109,7 +2372,7 @@ async function traverse(root, options, cb) {
   if (typeof cb !== 'function')
     throw new ArgError('callback', cb, 'function');
 
-  const iter = walk(root, options);
+  const iter = walk(paths, options);
 
   for (;;) {
     const {value, done} = await iter.next();
@@ -2124,7 +2387,7 @@ async function traverse(root, options, cb) {
   }
 }
 
-function traverseSync(root, options, cb) {
+function traverseSync(paths, options, cb) {
   if (typeof options === 'function'
       && typeof cb !== 'function') {
     [options, cb] = [cb, options];
@@ -2133,34 +2396,39 @@ function traverseSync(root, options, cb) {
   if (typeof cb !== 'function')
     throw new ArgError('callback', cb, 'function');
 
-  for (const [file, stat, depth] of walkSync(root, options)) {
+  for (const [file, stat, depth] of walkSync(paths, options)) {
     if (cb(file, stat, depth) === false)
       break;
   }
 }
 
-function walk(root, options) {
-  if (!Array.isArray(root))
-    root = [root];
+function walk(paths, options) {
+  paths = fromPaths(paths);
+  options = walkOptions(options);
 
-  const paths = [];
-
-  for (let i = root.length - 1; i >= 0; i--)
-    paths.push(fromPath(root[i]));
-
-  const opt = parseWalkOptions(options);
-
-  return new AsyncWalker(paths, opt);
+  return new AsyncWalker(paths, options);
 }
 
-function* walkSync(root, options) {
-  if (!Array.isArray(root))
-    root = [root];
+function* walkSync(paths, options) {
+  paths = fromPaths(paths);
+  options = walkOptions(options);
 
-  const opt = parseWalkOptions(options);
+  for (const path of paths)
+    yield* syncWalker(path, options);
+}
 
-  for (const file of root)
-    yield* syncWalker(file, opt);
+async function writeJSON(path, json, options) {
+  const [args, opt] = writeJSONOptions(options);
+  const text = encodeJSON(json, args);
+
+  return fs.writeFile(path, text, opt);
+}
+
+function writeJSONSync(path, json, options) {
+  const [args, opt] = writeJSONOptions(options);
+  const text = encodeJSON(json, args);
+
+  fs.writeFileSync(path, text, opt);
 }
 
 /**
@@ -2169,12 +2437,14 @@ function* walkSync(root, options) {
 
 class AsyncWalker {
   constructor(paths, options) {
-    this.stack = [paths];
-    this.filesOnly = options.filesOnly;
+    this.stack = [paths.reverse()];
+    this.dirs = options.dirs;
+    this.files = options.files;
     this.filter = options.filter;
     this.follow = options.follow;
     this.maxDepth = options.maxDepth;
-    this.options = options.stat;
+    this.stats = options.stats;
+    this.statter = options.throws ? stats : statsTry;
     this.seen = new Set();
     this.depth = 0;
   }
@@ -2237,9 +2507,6 @@ class AsyncWalker {
       throw e;
     }
 
-    if (list.length === 0)
-      return;
-
     const items = [];
 
     for (let i = list.length - 1; i >= 0; i--)
@@ -2255,7 +2522,7 @@ class AsyncWalker {
     if (path == null)
       return { value: undefined, done: true };
 
-    const stat = await statsTry(path, this.options);
+    const stat = await this.statter(path, this.stats);
     const dir = stat ? stat.isDirectory() : false;
 
     if (this.filter) {
@@ -2265,7 +2532,7 @@ class AsyncWalker {
 
     await this.read(path, dir, depth);
 
-    if (this.filesOnly && dir)
+    if (!shouldShow(this, dir))
       return this.next();
 
     return { value: [path, stat, depth], done: false };
@@ -2276,12 +2543,12 @@ class AsyncWalker {
  * SyncWalker
  */
 
-function* syncWalker(root, options) {
-  const path = fromPath(root);
+function* syncWalker(path, options) {
+  const statter = options.throws ? statsSync : statsTrySync;
   const seen = new Set();
 
   yield* (function* next(path, depth) {
-    const stat = statsTrySync(path, options.stat);
+    const stat = statter(path, options.stats);
     const dir = stat ? stat.isDirectory() : false;
 
     if (options.filter) {
@@ -2289,7 +2556,7 @@ function* syncWalker(root, options) {
         return;
     }
 
-    if (!options.filesOnly || !dir)
+    if (shouldShow(options, dir))
       yield [path, stat, depth];
 
     if (!dir || depth === options.maxDepth)
@@ -2327,25 +2594,137 @@ function* syncWalker(root, options) {
 }
 
 /*
- * Helpers
+ * Options Parsing
  */
 
-function isNoEntry(err) {
-  if (!err)
-    return false;
+function copyOptions(options) {
+  if (options == null)
+    options = 0;
 
-  return err.code === 'ENOENT'
-      || err.code === 'EACCES'
-      || err.code === 'EPERM'
-      || err.code === 'ELOOP';
+  if (typeof options === 'function')
+    options = { filter: options };
+  else if (typeof options === 'boolean')
+    options = { follow: options };
+  else if (typeof options === 'number')
+    options = { flags: options };
+
+  if (typeof options !== 'object') {
+    throw new ArgError('options', options, ['null',
+                                            'function',
+                                            'boolean',
+                                            'number',
+                                            'object']);
+  }
+
+  let {flags, filter, follow, overwrite, timestamps} = options;
+
+  if (flags == null)
+    flags = 0;
+
+  if (filter == null)
+    filter = null;
+
+  if (follow == null)
+    follow = false;
+
+  if (overwrite == null)
+    overwrite = (flags & fs.constants.COPYFILE_EXCL) === 0;
+
+  if (timestamps == null)
+    timestamps = false;
+
+  if ((flags >>> 0) !== flags)
+    throw new ArgError('flags', flags, 'integer');
+
+  if (filter != null && typeof filter !== 'function')
+    throw new ArgError('filter', filter, 'function');
+
+  if (typeof follow !== 'boolean')
+    throw new ArgError('follow', follow, 'boolean');
+
+  if (typeof overwrite !== 'boolean')
+    throw new ArgError('overwrite', overwrite, 'boolean');
+
+  if (typeof timestamps !== 'boolean')
+    throw new ArgError('timestamps', timestamps, 'boolean');
+
+  if (overwrite)
+    flags &= ~fs.constants.COPYFILE_EXCL;
+  else
+    flags |= fs.constants.COPYFILE_EXCL;
+
+  return {
+    flags,
+    filter,
+    follow,
+    overwrite,
+    stats: statsOptions(follow),
+    timestamps
+  };
 }
 
-function parseStatsOptions(options) {
+function readJSONOptions(options) {
   if (options == null)
-    options = false;
+    return [undefined, 'utf8'];
+
+  if (typeof options === 'string')
+    return [undefined, options];
+
+  if (typeof options === 'function')
+    return [options, 'utf8'];
+
+  if (typeof options !== 'object') {
+    throw new ArgError('options', options, ['null',
+                                            'string',
+                                            'object']);
+  }
+
+  let {reviver} = options;
+
+  if (reviver == null)
+    reviver = undefined;
+
+  if (reviver != null && typeof reviver !== 'function')
+    throw new ArgError('reviver', reviver, 'function');
+
+  options = prepareOptions(options);
+
+  return [reviver, options];
+}
+
+function removeOptions(options) {
+  if (options == null)
+    return { filter: null };
+
+  if (typeof options === 'function')
+    options = { filter: options };
+
+  if (typeof options !== 'object') {
+    throw new ArgError('options', options, ['null',
+                                            'function',
+                                            'object']);
+  }
+
+  let {filter} = options;
+
+  if (filter == null)
+    filter = null;
+
+  if (filter != null && typeof filter !== 'function')
+    throw new ArgError('filter', filter, 'function');
+
+  return { filter };
+}
+
+function statsOptions(options) {
+  if (options && options[PARSED_OPTIONS])
+    return options;
+
+  if (options == null)
+    options = true;
 
   if (typeof options === 'boolean')
-    return [options, undefined];
+    options = { follow: options };
 
   if (typeof options !== 'object') {
     throw new ArgError('options', options, ['null',
@@ -2356,7 +2735,7 @@ function parseStatsOptions(options) {
   let {follow, bigint} = options;
 
   if (follow == null)
-    follow = false;
+    follow = true;
 
   if (bigint == null)
     bigint = false;
@@ -2367,12 +2746,18 @@ function parseStatsOptions(options) {
   if (typeof bigint !== 'boolean')
     throw new ArgError('bigint', bigint, 'boolean');
 
-  return [follow, { bigint }];
+  return {
+    [PARSED_OPTIONS]: true,
+    follow,
+    stat: {
+      bigint
+    }
+  };
 }
 
-function parseWalkOptions(options) {
+function walkOptions(options) {
   if (options == null)
-    options = false;
+    options = true;
 
   if (typeof options === 'function')
     options = { filter: options };
@@ -2389,25 +2774,40 @@ function parseWalkOptions(options) {
                                             'object']);
   }
 
-  let {filesOnly, filter, follow, maxDepth} = options;
+  let {dirs, files, filter, follow, maxDepth, throws} = options;
 
-  if (filesOnly == null)
-    filesOnly = false;
+  if (options.noDirs != null)
+    dirs = !options.noDirs;
+
+  if (options.noFiles != null)
+    files = !options.noFiles;
+
+  if (dirs == null)
+    dirs = true;
+
+  if (files == null)
+    files = true;
 
   if (filter == null)
     filter = null;
 
   if (follow == null)
-    follow = false;
+    follow = true;
 
   if (maxDepth == null)
     maxDepth = -1;
 
+  if (throws == null)
+    throws = false;
+
   if (filter != null && typeof filter !== 'function')
     throw new ArgError('filter', filter, 'function');
 
-  if (typeof filesOnly !== 'boolean')
-    throw new ArgError('filesOnly', filesOnly, 'boolean');
+  if (typeof dirs !== 'boolean')
+    throw new ArgError('dirs', dirs, 'boolean');
+
+  if (typeof files !== 'boolean')
+    throw new ArgError('files', files, 'boolean');
 
   if (typeof follow !== 'boolean')
     throw new ArgError('follow', follow, 'boolean');
@@ -2415,13 +2815,135 @@ function parseWalkOptions(options) {
   if (maxDepth !== -1 && (maxDepth >>> 0) !== maxDepth)
     throw new ArgError('maxDepth', maxDepth, 'integer');
 
+  if (typeof throws !== 'boolean')
+    throw new ArgError('throws', throws, 'boolean');
+
+  if (!dirs && !files)
+    throw new Error('`dirs` and `files` cannot both be false.');
+
   return {
-    filesOnly,
+    dirs,
+    files,
     filter,
     follow,
     maxDepth,
-    stat: options
+    stats: statsOptions({
+      bigint: options.bigint,
+      follow
+    }),
+    throws
   };
+}
+
+function writeJSONOptions(options) {
+  const defaults = DEFAULT_STRINGIFY_OPTIONS;
+
+  if (options == null)
+    return [defaults, 'utf8'];
+
+  if (typeof options === 'string')
+    return [defaults, options];
+
+  if (typeof options === 'function') {
+    const [, spaces, eol] = defaults;
+    return [[options, spaces, eol], 'utf8'];
+  }
+
+  if ((options >>> 0) === options) {
+    const [replacer, , eol] = defaults;
+    return [[replacer, options, eol], 'utf8'];
+  }
+
+  if (typeof options !== 'object') {
+    throw new ArgError('options', options, ['null',
+                                            'string',
+                                            'function',
+                                            'integer',
+                                            'object']);
+  }
+
+  let {replacer, spaces, eol} = options;
+
+  if (replacer == null)
+    replacer = defaults[0];
+
+  if (spaces == null)
+    spaces = defaults[1];
+
+  if (eol == null)
+    eol = defaults[2];
+
+  if (replacer != null && typeof replacer !== 'function')
+    throw new ArgError('replacer', replacer, 'function');
+
+  if ((spaces >>> 0) !== spaces)
+    throw new ArgError('spaces', spaces, 'integer');
+
+  if (typeof eol !== 'string')
+    throw new ArgError('eol', eol, 'string');
+
+  options = prepareOptions(options);
+
+  return [[replacer, spaces, eol], options];
+}
+
+/*
+ * Helpers
+ */
+
+function isNoEntry(err) {
+  if (!err)
+    return false;
+
+  return err.code === 'ENOENT'
+      || err.code === 'EACCES'
+      || err.code === 'EPERM'
+      || err.code === 'ELOOP';
+}
+
+function shouldShow(options, dir) {
+  return dir ? options.dirs : options.files;
+}
+
+function encodeJSON(json, [replacer, spaces, eol]) {
+  let text = JSON.stringify(json, replacer, spaces);
+
+  if (typeof text !== 'string')
+    throw new Error(`Cannot stringify JSON of type ${typeof json}.`);
+
+  if (spaces > 0 && eol !== '\n')
+    text = text.replace(/\n/g, () => eol);
+
+  return text + eol;
+}
+
+function decodeJSON(text, reviver) {
+  // UTF-16 BOM (also slices UTF-8 BOM).
+  if (text.length > 0 && text.charCodeAt(0) === 0xfeff)
+    text = text.substring(1);
+
+  return JSON.parse(text, reviver);
+}
+
+function prepareOptions(options) {
+  const out = {};
+
+  for (const key of Object.keys(options)) {
+    switch (key) {
+      case 'replacer':
+      case 'reviver':
+      case 'spaces':
+      case 'eol':
+        continue;
+    }
+
+    out[key] = options[key];
+  }
+
+  if (out.encoding == null)
+    out.encoding = 'utf8';
+
+  return out;
 }
 
 /*
@@ -2436,8 +2958,15 @@ exports.lstatTry = lstatTry;
 exports.lstatTrySync = lstatTrySync;
 exports.mkdirp = mkdirp;
 exports.mkdirpSync = mkdirpSync;
-exports.rimraf = rimraf;
-exports.rimrafSync = rimrafSync;
+exports.move = move;
+exports.moveSync = moveSync;
+exports.outputFile = outputFile;
+exports.outputFileSync = outputFileSync;
+exports.readJSON = readJSON;
+exports.readJSONSync = readJSONSync;
+exports.removeSync = removeSync;
+exports.remove = remove;
+exports.removeSync = removeSync;
 exports.statTry = statTry;
 exports.statTrySync = statTrySync;
 exports.stats = stats;
@@ -2448,6 +2977,8 @@ exports.traverse = traverse;
 exports.traverseSync = traverseSync;
 exports.walk = walk;
 exports.walkSync = walkSync;
+exports.writeJSON = writeJSON;
+exports.writeJSONSync = writeJSONSync;
 }]
 ];
 

@@ -814,6 +814,7 @@ class ArgError extends TypeError {
     super(msg);
 
     this.code = 'ERR_INVALID_ARG_TYPE';
+    this.name = `TypeError [${this.code}]`;
 
     if (Error.captureStackTrace)
       Error.captureStackTrace(this, this.constructor);
@@ -1683,7 +1684,7 @@ function clonePromises(promises) {
     truncate: promises.truncate,
     unlink: promises.unlink,
     utimes: promises.utimes,
-    writeFile: promises.watchFile
+    writeFile: promises.writeFile
   };
 }
 

@@ -2322,7 +2322,7 @@ async function stats(file, options) {
     }
   }
 
-  return await fs.lstat(file, options.stat);
+  return fs.lstat(file, options.stat);
 }
 
 function statsSync(file, options) {

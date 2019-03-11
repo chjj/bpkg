@@ -36,7 +36,7 @@ const builtins = [
   ['querystring/', 'lib/builtins/querystring.js'],
   ['stream-browserify', 'lib/builtins/stream.js'],
   ['string_decoder/', 'lib/builtins/string_decoder.js'],
-  ['timers-browserify', 'lib/builtins/timers.js'],
+  // ['timers-browserify', 'lib/builtins/timers.js'],
   ['tty-browserify', 'lib/builtins/tty.js'],
   ['url/', 'lib/builtins/url.js'],
   ['util/', 'lib/builtins/util.js'],
@@ -79,6 +79,7 @@ async function buildModule(name, path, browser) {
   });
 }
 
+// eslint-disable-next-line
 function patchTimers() {
   const file = resolve(ROOT, 'lib/builtins/timers.js');
   const code = fs.readFileSync(file, 'utf8');
@@ -217,7 +218,7 @@ function buildUglify(name) {
   for (const [name, path] of modules)
     await buildModule(name, path, false);
 
-  patchTimers();
+  // patchTimers();
   buildConstants();
   buildUglify('uglify-js');
   buildUglify('uglify-es');

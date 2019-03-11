@@ -137,7 +137,7 @@
  */
 
 var __node_modules__ = [
-[/* 0 */ 'acorn-wrap', '/index.js', function(exports, require, module, __filename, __dirname, __meta) {
+[/* 0 */ 'acorn-wrap', '/index.js', function(exports, module, __filename, __dirname, __meta) {
 'use strict';
 
 const acorn = __node_require__(1 /* 'acorn' */);
@@ -170,7 +170,7 @@ acorn.walk = (node, baseVisitor, state, override) => {
 
 module.exports = acorn;
 }],
-[/* 1 */ 'acorn', '/dist/acorn.js', function(exports, require, module, __filename, __dirname, __meta) {
+[/* 1 */ 'acorn', '/dist/acorn.js', function(exports, module, __filename, __dirname, __meta) {
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
 	typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -5504,7 +5504,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
 })));
 //# sourceMappingURL=acorn.js.map
 }],
-[/* 2 */ 'acorn-walk', '/dist/walk.js', function(exports, require, module, __filename, __dirname, __meta) {
+[/* 2 */ 'acorn-walk', '/dist/walk.js', function(exports, module, __filename, __dirname, __meta) {
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
 	typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -5962,7 +5962,7 @@ Object.defineProperty(exports, '__esModule', { value: true });
 })));
 //# sourceMappingURL=walk.js.map
 }],
-[/* 3 */ 'acorn-bigint', '/index.js', function(exports, require, module, __filename, __dirname, __meta) {
+[/* 3 */ 'acorn-bigint', '/index.js', function(exports, module, __filename, __dirname, __meta) {
 "use strict"
 
 const acorn = __node_require__(1 /* 'acorn' */)
@@ -6017,7 +6017,7 @@ module.exports = function(Parser) {
   }
 }
 }],
-[/* 4 */ 'acorn-export-ns-from', '/index.js', function(exports, require, module, __filename, __dirname, __meta) {
+[/* 4 */ 'acorn-export-ns-from', '/index.js', function(exports, module, __filename, __dirname, __meta) {
 "use strict"
 
 const skipWhiteSpace = /(?:\s|\/\/.*|\/\*[^]*?\*\/)*/g
@@ -6050,7 +6050,7 @@ module.exports = function(Parser) {
   }
 }
 }],
-[/* 5 */ 'acorn-dynamic-import', '/src/index.js', function(exports, require, module, __filename, __dirname, __meta) {
+[/* 5 */ 'acorn-dynamic-import', '/src/index.js', function(exports, module, __filename, __dirname, __meta) {
 'use strict';
 
 /* eslint-disable no-underscore-dangle */
@@ -6098,7 +6098,7 @@ function dynamicImport(Parser) {
 }
 exports['default'] = dynamicImport;
 }],
-[/* 6 */ 'acorn-import-meta', '/index.js', function(exports, require, module, __filename, __dirname, __meta) {
+[/* 6 */ 'acorn-import-meta', '/index.js', function(exports, module, __filename, __dirname, __meta) {
 "use strict"
 
 const tt = __node_require__(1 /* 'acorn' */).tokTypes
@@ -6172,12 +6172,8 @@ function __node_require__(id) {
   var name = mod[0];
   var path = mod[1];
   var func = mod[2];
-
-  var filename = __filename;
-  var dirname = __dirname;
   var meta;
 
-  var _require = require;
   var _exports = exports;
   var _module = module;
 
@@ -6187,23 +6183,24 @@ function __node_require__(id) {
       id: '/' + name + path,
       exports: _exports,
       parent: module.parent,
-      filename: filename,
+      filename: module.filename,
       loaded: false,
       children: module.children,
-      paths: module.paths,
-      require: _require
+      paths: module.paths
     };
   }
 
   __node_cache__[id] = _module;
 
   try {
-    func.call(_exports, _exports, _require,
-              _module, filename, dirname, meta);
+    func.call(_exports, _exports, _module,
+              __filename, __dirname, meta);
   } catch (e) {
     __node_cache__[id] = null;
     throw e;
   }
+
+  __node_modules__[id] = null;
 
   if (id !== 0)
     _module.loaded = true;

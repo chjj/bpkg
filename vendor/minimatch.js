@@ -93,7 +93,7 @@
  */
 
 var __node_modules__ = [
-[/* 0 */ 'minimatch', '/minimatch.js', function(exports, require, module, __filename, __dirname, __meta) {
+[/* 0 */ 'minimatch', '/minimatch.js', function(exports, module, __filename, __dirname, __meta) {
 module.exports = minimatch
 minimatch.Minimatch = Minimatch
 
@@ -1018,7 +1018,7 @@ function regExpEscape (s) {
   return s.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&')
 }
 }],
-[/* 1 */ 'brace-expansion', '/index.js', function(exports, require, module, __filename, __dirname, __meta) {
+[/* 1 */ 'brace-expansion', '/index.js', function(exports, module, __filename, __dirname, __meta) {
 var concatMap = __node_require__(2 /* 'concat-map' */);
 var balanced = __node_require__(3 /* 'balanced-match' */);
 
@@ -1220,7 +1220,7 @@ function expand(str, isTop) {
   return expansions;
 }
 }],
-[/* 2 */ 'concat-map', '/index.js', function(exports, require, module, __filename, __dirname, __meta) {
+[/* 2 */ 'concat-map', '/index.js', function(exports, module, __filename, __dirname, __meta) {
 module.exports = function (xs, fn) {
     var res = [];
     for (var i = 0; i < xs.length; i++) {
@@ -1235,7 +1235,7 @@ var isArray = Array.isArray || function (xs) {
     return Object.prototype.toString.call(xs) === '[object Array]';
 };
 }],
-[/* 3 */ 'balanced-match', '/index.js', function(exports, require, module, __filename, __dirname, __meta) {
+[/* 3 */ 'balanced-match', '/index.js', function(exports, module, __filename, __dirname, __meta) {
 'use strict';
 module.exports = balanced;
 function balanced(a, b, str) {
@@ -1322,12 +1322,8 @@ function __node_require__(id) {
   var name = mod[0];
   var path = mod[1];
   var func = mod[2];
-
-  var filename = __filename;
-  var dirname = __dirname;
   var meta;
 
-  var _require = require;
   var _exports = exports;
   var _module = module;
 
@@ -1337,23 +1333,24 @@ function __node_require__(id) {
       id: '/' + name + path,
       exports: _exports,
       parent: module.parent,
-      filename: filename,
+      filename: module.filename,
       loaded: false,
       children: module.children,
-      paths: module.paths,
-      require: _require
+      paths: module.paths
     };
   }
 
   __node_cache__[id] = _module;
 
   try {
-    func.call(_exports, _exports, _require,
-              _module, filename, dirname, meta);
+    func.call(_exports, _exports, _module,
+              __filename, __dirname, meta);
   } catch (e) {
     __node_cache__[id] = null;
     throw e;
   }
+
+  __node_modules__[id] = null;
 
   if (id !== 0)
     _module.loaded = true;

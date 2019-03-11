@@ -1,9 +1,9 @@
 /*!
- * bfile@0.1.4 - Filesystem wrapper for node.js
+ * bfile@0.2.0 - Filesystem wrapper for node.js
  * Copyright (c) 2019, Christopher Jeffrey (MIT)
  * https://github.com/bcoin-org/bfile
  *
- * License for bfile@0.1.4:
+ * License for bfile@0.2.0:
  *
  * This software is licensed under the MIT License.
  *
@@ -29,7 +29,7 @@
  */
 
 var __node_modules__ = [
-[/* 0 */ 'bfile', '/lib/bfile.js', function(exports, require, module, __filename, __dirname, __meta) {
+[/* 0 */ 'bfile', '/lib/bfile.js', function(exports, module, __filename, __dirname, __meta) {
 /*!
  * bfile.js - promisified fs module
  * Copyright (c) 2014-2019, Christopher Jeffrey (MIT License).
@@ -44,7 +44,7 @@ var __node_modules__ = [
 
 module.exports = __node_require__(1 /* './fs' */);
 }],
-[/* 1 */ 'bfile', '/lib/fs.js', function(exports, require, module, __filename, __dirname, __meta) {
+[/* 1 */ 'bfile', '/lib/fs.js', function(exports, module, __filename, __dirname, __meta) {
 /*!
  * fs.js - promisified fs module for bcoin
  * Copyright (c) 2014-2019, Christopher Jeffrey (MIT License).
@@ -160,7 +160,7 @@ fs.unsupported = false;
 
 module.exports = fs;
 }],
-[/* 2 */ 'bfile', '/lib/backend.js', function(exports, require, module, __filename, __dirname, __meta) {
+[/* 2 */ 'bfile', '/lib/backend.js', function(exports, module, __filename, __dirname, __meta) {
 /*!
  * backend.js - backend selection for bfile
  * Copyright (c) 2014-2019, Christopher Jeffrey (MIT License).
@@ -180,7 +180,7 @@ if (features.HAS_ALL)
 else
   module.exports = __node_require__(7 /* './legacy' */);
 }],
-[/* 3 */ 'bfile', '/lib/features.js', function(exports, require, module, __filename, __dirname, __meta) {
+[/* 3 */ 'bfile', '/lib/features.js', function(exports, module, __filename, __dirname, __meta) {
 /*!
  * features.js - feature detection for bfile
  * Copyright (c) 2014-2019, Christopher Jeffrey (MIT License).
@@ -310,7 +310,7 @@ exports.HAS_WRITE_PENDING = HAS_WRITE_PENDING;
 exports.HAS_STABLE_PROMISES = HAS_STABLE_PROMISES;
 exports.HAS_ALL = HAS_ALL;
 }],
-[/* 4 */ 'bfile', '/lib/modern.js', function(exports, require, module, __filename, __dirname, __meta) {
+[/* 4 */ 'bfile', '/lib/modern.js', function(exports, module, __filename, __dirname, __meta) {
 /*!
  * modern.js - modern backend for bfile
  * Copyright (c) 2014-2019, Christopher Jeffrey (MIT License).
@@ -533,7 +533,7 @@ Object.defineProperties(exports, {
   }
 });
 }],
-[/* 5 */ 'bfile', '/lib/util.js', function(exports, require, module, __filename, __dirname, __meta) {
+[/* 5 */ 'bfile', '/lib/util.js', function(exports, module, __filename, __dirname, __meta) {
 /*!
  * util.js - utils for bfile
  * Copyright (c) 2014-2019, Christopher Jeffrey (MIT License).
@@ -780,7 +780,7 @@ exports.fromPath = fromPath;
 exports.fromPaths = fromPaths;
 exports.toBuffer = toBuffer;
 }],
-[/* 6 */ 'bfile', '/lib/error.js', function(exports, require, module, __filename, __dirname, __meta) {
+[/* 6 */ 'bfile', '/lib/error.js', function(exports, module, __filename, __dirname, __meta) {
 /*!
  * error.js - errors for bfile
  * Copyright (c) 2014-2019, Christopher Jeffrey (MIT License).
@@ -925,7 +925,7 @@ FSError.EISDIR = {
 exports.ArgError = ArgError;
 exports.FSError = FSError;
 }],
-[/* 7 */ 'bfile', '/lib/legacy.js', function(exports, require, module, __filename, __dirname, __meta) {
+[/* 7 */ 'bfile', '/lib/legacy.js', function(exports, module, __filename, __dirname, __meta) {
 /*!
  * legacy.js - legacy backend for bfile
  * Copyright (c) 2014-2019, Christopher Jeffrey (MIT License).
@@ -1053,7 +1053,7 @@ if (features.HAS_PROMISES_IMPL && !features.HAS_OPTIONAL_FLAGS) {
 
 module.exports = fs;
 }],
-[/* 8 */ 'bfile', '/lib/compat.js', function(exports, require, module, __filename, __dirname, __meta) {
+[/* 8 */ 'bfile', '/lib/compat.js', function(exports, module, __filename, __dirname, __meta) {
 /*!
  * compat.js - compat functions for bfile
  * Copyright (c) 2014-2019, Christopher Jeffrey (MIT License).
@@ -1784,7 +1784,7 @@ exports.clonePromises = clonePromises;
 exports.patchTypedArray = patchTypedArray;
 exports.patchOpenFlags = patchOpenFlags;
 }],
-[/* 9 */ 'bfile', '/lib/extra.js', function(exports, require, module, __filename, __dirname, __meta) {
+[/* 9 */ 'bfile', '/lib/extra.js', function(exports, module, __filename, __dirname, __meta) {
 /*!
  * extra.js - extra functions for bfile
  * Copyright (c) 2014-2019, Christopher Jeffrey (MIT License).
@@ -3007,12 +3007,8 @@ function __node_require__(id) {
   var name = mod[0];
   var path = mod[1];
   var func = mod[2];
-
-  var filename = __filename;
-  var dirname = __dirname;
   var meta;
 
-  var _require = require;
   var _exports = exports;
   var _module = module;
 
@@ -3022,23 +3018,24 @@ function __node_require__(id) {
       id: '/' + name + path,
       exports: _exports,
       parent: module.parent,
-      filename: filename,
+      filename: module.filename,
       loaded: false,
       children: module.children,
-      paths: module.paths,
-      require: _require
+      paths: module.paths
     };
   }
 
   __node_cache__[id] = _module;
 
   try {
-    func.call(_exports, _exports, _require,
-              _module, filename, dirname, meta);
+    func.call(_exports, _exports, _module,
+              __filename, __dirname, meta);
   } catch (e) {
     __node_cache__[id] = null;
     throw e;
   }
+
+  __node_modules__[id] = null;
 
   if (id !== 0)
     _module.loaded = true;

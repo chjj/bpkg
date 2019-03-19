@@ -37,6 +37,7 @@ const HELP = `
     -l, --no-license         do not place licenses at the top of the bundle
     -d, --date <date>        set date for build (good for deterministic builds)
     -m, --multi              output module as multiple files
+    -C, --convert-esm        whether to convert ESM to CJS in multi mode
     -s, --standalone         append UMD initialization code to browser bundle
     -N, --name <name>        name to use for global exposure (default: pkg.name)
     -p, --plugin <plugin>    use plugin
@@ -158,6 +159,7 @@ async function parseArgs() {
     noLicense: false,
     time: new Date(),
     multi: false,
+    convertESM: false,
     standalone: false,
     name: null,
     plugins: [],
@@ -289,6 +291,12 @@ async function parseArgs() {
       case '-m':
       case '--multi': {
         options.multi = true;
+        break;
+      }
+
+      case '-C':
+      case '--convert-esm': {
+        options.convertESM = true;
         break;
       }
 

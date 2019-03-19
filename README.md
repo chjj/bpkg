@@ -29,6 +29,7 @@ $ bpkg -h
     -l, --no-license         do not place licenses at the top of the bundle
     -d, --date <date>        set date for build (good for deterministic builds)
     -m, --multi              output module as multiple files
+    -C, --convert-esm        whether to convert ESM to CJS in multi mode
     -s, --standalone         append UMD initialization code to browser bundle
     -N, --name <name>        name to use for global exposure (default: pkg.name)
     -p, --plugin <plugin>    use plugin

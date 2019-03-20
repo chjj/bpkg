@@ -29,6 +29,8 @@ const HELP = `
     -n, --node               set environment to node
     -b, --browser            set environment to browser
     -x, --extensions <ext>   list of extensions (default: .js,.mjs,.json,.node)
+    --external <names>       comma-separated blacklist of modules
+    --local-only             only include local modules
     -f, --browser-field      force usage of package.json "browser" field
     -i, --ignore-missing     ignore missing modules during compilation
     -c, --collect-bindings   include bindings separately
@@ -153,6 +155,8 @@ async function parseArgs() {
     code: null,
     env: 'node',
     extensions: ['.js', '.mjs'],
+    external: [],
+    localOnly: false,
     browserField: false,
     ignoreMissing: false,
     collectBindings: false,
@@ -235,6 +239,22 @@ async function parseArgs() {
 
         i += 1;
 
+        break;
+      }
+
+      case '--external': {
+        if (!next || next[0] === '-')
+          throw new Error(`Invalid option for: ${arg}.`);
+
+        options.external.push(...next.split(','));
+
+        i += 1;
+
+        break;
+      }
+
+      case '--local-only': {
+        options.localOnly = true;
         break;
       }
 

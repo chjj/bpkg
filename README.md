@@ -21,6 +21,8 @@ $ bpkg -h
     -n, --node               set environment to node
     -b, --browser            set environment to browser
     -x, --extensions <ext>   list of extensions (default: .js,.mjs,.json,.node)
+    --external <names>       comma-separated blacklist of modules
+    --local-only             only include local modules
     -f, --browser-field      force usage of package.json "browser" field
     -i, --ignore-missing     ignore missing modules during compilation
     -c, --collect-bindings   include bindings separately

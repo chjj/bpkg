@@ -26,6 +26,7 @@ $ bpkg -h
     -f, --browser-field      force usage of package.json "browser" field
     -i, --ignore-missing     ignore missing modules during compilation
     -c, --collect-bindings   include bindings separately
+    --ignore-bindings        ignore all bindings
     -X, --exclude-source     exclude c++ source in multi mode
     -H, --no-header          do not place header at the top of the bundle
     -l, --no-license         do not place licenses at the top of the bundle
@@ -250,9 +251,7 @@ class MyPlugin {
   // compiler to hook into (typescript,
   // for example).
   async compile(module, code) {
-    // `compile` is unique in that it
-    // accepts and returns a Buffer object.
-    assert(Buffer.isBuffer(code));
+    assert(typeof code === 'string');
     module.path; // Filename path.
     module.root; // Package root.
     module.resolve; // Module resolver (async).

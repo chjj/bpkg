@@ -150,19 +150,7 @@ const Parser = acorn.Parser.extend(
   __node_require__(6 /* 'acorn-import-meta' */)
 );
 
-walk.base.Import = () => {};
-
-walk.collect = (node) => {
-  const nodes = [];
-
-  const cb = (node, st, type) => {
-    nodes.push(node);
-  };
-
-  walk.full(node, cb, null, null, null);
-
-  return nodes;
-};
+walk.base.Import = (node, st, c) => {};
 
 acorn.parse = Parser.parse.bind(Parser);
 acorn.parseExpressionAt = Parser.parseExpressionAt.bind(Parser);

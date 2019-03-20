@@ -20,7 +20,7 @@ const ROOT = resolve(__dirname, '..');
  */
 
 const builtins = [
-  ['assert/', 'lib/builtins/assert.js'],
+  // ['assert/', 'lib/builtins/assert.js'],
   ['buffer/', 'lib/builtins/buffer.js'],
   ['console-browserify', 'lib/builtins/console.js'],
   // ['constants-browserify', 'lib/builtins/constants.js'],

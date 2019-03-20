@@ -6058,9 +6058,9 @@ var __bpkg_import_0__ = __node_require__(1 /* 'acorn' */);
 var tt = __bpkg_import_0__['tokTypes'];
 
 
-exports._esModule = true;
+exports.__esModule = true;
 var DynamicImportKey = 'Import';
-exports.DynamicImportKey = DynamicImportKey;
+exports['DynamicImportKey'] = DynamicImportKey;
 
 
 // NOTE: This allows `yield import()` to parse correctly.

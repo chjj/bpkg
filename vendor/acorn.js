@@ -152,21 +152,22 @@ const Parser = acorn.Parser.extend(
 
 walk.base.Import = () => {};
 
-acorn.parse = Parser.parse.bind(Parser);
-acorn.parseExpressionAt = Parser.parseExpressionAt.bind(Parser);
-acorn.tokenizer = Parser.tokenizer.bind(Parser);
-
-acorn.walk = (node, baseVisitor, state, override) => {
+walk.collect = (node) => {
   const nodes = [];
 
   const cb = (node, st, type) => {
     nodes.push(node);
   };
 
-  walk.full(node, cb, baseVisitor, state, override);
+  walk.full(node, cb, null, null, null);
 
   return nodes;
 };
+
+acorn.parse = Parser.parse.bind(Parser);
+acorn.parseExpressionAt = Parser.parseExpressionAt.bind(Parser);
+acorn.tokenizer = Parser.tokenizer.bind(Parser);
+acorn.walk = walk;
 
 module.exports = acorn;
 }],

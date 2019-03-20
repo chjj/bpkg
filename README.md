@@ -31,6 +31,7 @@ $ bpkg -h
     -m, --multi              output module as multiple files
     -M, --esm                output module as native ESM
     -C, --cjs                output module as CommonJS
+    -L, --loose              loose ESM transformations
     -s, --standalone         append UMD initialization code to browser bundle
     -N, --name <name>        name to use for global exposure (default: pkg.name)
     -p, --plugin <plugin>    use plugin

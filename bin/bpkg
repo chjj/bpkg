@@ -39,6 +39,7 @@ const HELP = `
     -m, --multi              output module as multiple files
     -M, --esm                output module as native ESM
     -C, --cjs                output module as CommonJS
+    -L, --loose              loose ESM transformations
     -s, --standalone         append UMD initialization code to browser bundle
     -N, --name <name>        name to use for global exposure (default: pkg.name)
     -p, --plugin <plugin>    use plugin
@@ -161,6 +162,7 @@ async function parseArgs() {
     time: new Date(),
     multi: false,
     esm: null,
+    loose: false,
     standalone: false,
     name: null,
     plugins: [],
@@ -304,6 +306,12 @@ async function parseArgs() {
       case '-C':
       case '--cjs': {
         options.esm = false;
+        break;
+      }
+
+      case '-L':
+      case '--loose': {
+        options.loose = true;
         break;
       }
 

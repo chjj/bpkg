@@ -73,6 +73,7 @@ async function buildModule(name, path, browser) {
   await bpkg({
     env: 'node',
     esm: false,
+    loose: true,
     time: DATE,
     browserField: browser,
     input,

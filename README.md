@@ -33,10 +33,11 @@ $ bpkg -h
     -d, --date <date>        set date for build (good for deterministic builds)
     -m, --release            output module as multiple files
     -t, --transpile          transpile multiple files without releasing
+    -T, --target             select target (cjs, umd, or esm)
     -M, --esm                output module as native ESM
     -C, --cjs                output module as CommonJS
+    -u, --umd                append UMD initialization code to browser bundle
     -L, --loose              loose ESM transformations
-    -s, --standalone         append UMD initialization code to browser bundle
     -N, --name <name>        name to use for global exposure (default: pkg.name)
     -p, --plugin <plugin>    use plugin
     -r, --requires <a,b,..>  comma-separated list of requires
@@ -148,7 +149,7 @@ $ wc -l bcrypto.js
 To expose with UMD (use `--name` to specify AMD and global name):
 
 ``` bash
-$ bpkg --browser --standalone --name=bcrypto ./node_modules/bcrypto bcrypto.js
+$ bpkg --browser --umd --name=bcrypto ./node_modules/bcrypto bcrypto.js
 ```
 
 #### Plugins & requires
@@ -158,7 +159,7 @@ Babel with `@babel/polyfill`:
 ``` bash
 $ bpkg --plugin [ babel --presets [ @babel/env ] ] \
        --requires @babel/polyfill                  \
-       --browser --standalone --name=bcrypto       \
+       --browser --umd --name=bcrypto              \
        ./node_modules/bcrypto bcrypto.js
 ```
 
@@ -169,7 +170,7 @@ $ bpkg --plugin [ babel                            \
          --presets [ @babel/env ]                  \
          --plugins [ @babel/transform-runtime ]    \
        ]                                           \
-       --browser --standalone --name=bcrypto       \
+       --browser --umd --name=bcrypto              \
        ./node_modules/bcrypto bcrypto.js
 ```
 

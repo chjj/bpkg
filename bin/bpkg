@@ -41,10 +41,11 @@ const HELP = `
     -d, --date <date>        set date for build (good for deterministic builds)
     -m, --release            output module as multiple files
     -t, --transpile          transpile multiple files without releasing
+    -T, --target             select target (cjs, umd, or esm)
     -M, --esm                output module as native ESM
     -C, --cjs                output module as CommonJS
+    -u, --umd                append UMD initialization code to browser bundle
     -L, --loose              loose ESM transformations
-    -s, --standalone         append UMD initialization code to browser bundle
     -N, --name <name>        name to use for global exposure (default: pkg.name)
     -p, --plugin <plugin>    use plugin
     -r, --requires <a,b,..>  comma-separated list of requires
@@ -117,9 +118,8 @@ async function parseArgs() {
     time: new Date(),
     release: false,
     transpile: false,
-    esm: null,
+    target: null,
     loose: false,
-    standalone: false,
     name: null,
     plugins: [],
     environment: Object.create(null),
@@ -281,27 +281,42 @@ async function parseArgs() {
         break;
       }
 
+      case '-T':
+      case '--target': {
+        if (!next || next[0] === '-')
+          throw new Error(`Invalid option for: ${arg}.`);
+
+        if (next !== 'cjs' && next !== 'umd' && next !== 'esm')
+          throw new Error('--target must be one of cjs, umd, or esm.');
+
+        options.target = next;
+
+        i += 1;
+
+        break;
+      }
+
       case '-M':
       case '--esm': {
-        options.esm = true;
+        options.target = 'esm';
         break;
       }
 
       case '-C':
       case '--cjs': {
-        options.esm = false;
+        options.target = 'cjs';
+        break;
+      }
+
+      case '-u':
+      case '--umd': {
+        options.target = 'umd';
         break;
       }
 
       case '-L':
       case '--loose': {
         options.loose = true;
-        break;
-      }
-
-      case '-s':
-      case '--standalone': {
-        options.standalone = true;
         break;
       }
 
@@ -440,9 +455,6 @@ async function parseArgs() {
     if (!options.output && files.length > 1)
       options.output = files[1];
   }
-
-  if (options.env === 'browser' && options.standalone)
-    options.esm = false;
 
   return options;
 }

@@ -35,12 +35,12 @@ const HELP = `
     -i, --ignore-missing     ignore missing modules during compilation
     -c, --collect-bindings   include bindings separately
     --ignore-bindings        ignore all bindings
-    -X, --exclude-source     exclude c++ source in multi mode
+    -X, --exclude-source     exclude c++ source in release mode
     -H, --no-header          do not place header at the top of the bundle
     -l, --no-license         do not place licenses at the top of the bundle
     -d, --date <date>        set date for build (good for deterministic builds)
     -m, --release            output module as multiple files
-    -t, --transpile          transpile only
+    -t, --transpile          transpile multiple files without releasing
     -M, --esm                output module as native ESM
     -C, --cjs                output module as CommonJS
     -L, --loose              loose ESM transformations

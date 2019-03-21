@@ -32,7 +32,7 @@ $ bpkg -h
     -l, --no-license         do not place licenses at the top of the bundle
     -d, --date <date>        set date for build (good for deterministic builds)
     -m, --release            output module as multiple files
-    -t, --transpile          transpile only
+    -t, --transpile          transpile multiple files without releasing
     -M, --esm                output module as native ESM
     -C, --cjs                output module as CommonJS
     -L, --loose              loose ESM transformations

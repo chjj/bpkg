@@ -43,8 +43,13 @@
       }
     }
   ],
+  "parser": "babel-eslint",
   "parserOptions": {
     "ecmaVersion": 10,
+    "ecmaFeatures": {
+      "globalReturn": true
+    },
+    "requireConfigFile": false,
     "sourceType": "script"
   },
   "root": true,

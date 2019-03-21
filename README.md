@@ -27,11 +27,12 @@ $ bpkg -h
     -i, --ignore-missing     ignore missing modules during compilation
     -c, --collect-bindings   include bindings separately
     --ignore-bindings        ignore all bindings
-    -X, --exclude-source     exclude c++ source in multi mode
+    -X, --exclude-source     exclude c++ source in release mode
     -H, --no-header          do not place header at the top of the bundle
     -l, --no-license         do not place licenses at the top of the bundle
     -d, --date <date>        set date for build (good for deterministic builds)
-    -m, --multi              output module as multiple files
+    -m, --release            output module as multiple files
+    -t, --transpile          transpile only
     -M, --esm                output module as native ESM
     -C, --cjs                output module as CommonJS
     -L, --loose              loose ESM transformations
@@ -106,12 +107,12 @@ $ ls bcrypto/bindings/
 ./  ../  bcrypto.node*
 ```
 
-### Multi-file Mode
+### Release Mode
 
 To package all files in a dependency tree into a nice neat tarball:
 
 ``` bash
-$ bpkg --multi --collect-bindings --output=bcrypto.tar.gz ./node_modules/bcrypto
+$ bpkg --release --collect-bindings --output=bcrypto.tar.gz ./node_modules/bcrypto
 $ tar -tzf bcrypto.tar.gz
 bcrypto/
 bcrypto/LICENSE
@@ -220,8 +221,6 @@ const assert = require('assert');
 
 class MyPlugin {
   constructor(bundle, options) {
-    bundle.input; // Source entry point.
-    bundle.output; // Output file/directory.
     bundle.root; // Main package root.
     bundle.resolve; // Module resolver (async)
     options; // Options passed from the commandline (or directly).
@@ -278,7 +277,7 @@ class MyPlugin {
     return location;
   }
 
-  // Only called in multi mode, allows
+  // Only called in release mode, allows
   // you to "rewrite" the output filename.
   async rewrite(module, path) {
     // Example:

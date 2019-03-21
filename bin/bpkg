@@ -39,7 +39,8 @@ const HELP = `
     -H, --no-header          do not place header at the top of the bundle
     -l, --no-license         do not place licenses at the top of the bundle
     -d, --date <date>        set date for build (good for deterministic builds)
-    -m, --multi              output module as multiple files
+    -m, --release            output module as multiple files
+    -t, --transpile          transpile only
     -M, --esm                output module as native ESM
     -C, --cjs                output module as CommonJS
     -L, --loose              loose ESM transformations
@@ -94,64 +95,12 @@ function getArgs(argv) {
   return args;
 }
 
-async function readInput() {
-  const out = [];
-
-  let total = 0;
-
-  return new Promise((resolve, reject) => {
-    let onData, onError, onEnd;
-
-    const cleanup = () => {
-      stdin.removeListener('data', onData);
-      stdin.removeListener('error', onError);
-      stdin.removeListener('end', onEnd);
-    };
-
-    onData = (data) => {
-      if (total > (100 << 20)) {
-        onError(new Error('Too much code buffered.'));
-        return;
-      }
-
-      total += data.length;
-      out.push(data);
-    };
-
-    onError = (err) => {
-      cleanup();
-
-      try {
-        stdin.destroy();
-      } catch (e) {
-        ;
-      }
-
-      reject(err);
-    };
-
-    onEnd = () => {
-      cleanup();
-      resolve(Buffer.concat(out));
-    };
-
-    stdin.on('data', onData);
-    stdin.on('error', onError);
-    stdin.on('end', onEnd);
-
-    try {
-      stdin.resume();
-    } catch (e) {
-      reject(e);
-    }
-  });
-}
-
 async function parseArgs() {
   const options = {
     __proto__: null,
     stream: stderr,
-    input: null,
+    input: '.',
+    files: [],
     output: null,
     code: null,
     env: 'node',
@@ -166,7 +115,8 @@ async function parseArgs() {
     noHeader: false,
     noLicense: false,
     time: new Date(),
-    multi: false,
+    release: false,
+    transpile: false,
     esm: null,
     loose: false,
     standalone: false,
@@ -178,6 +128,7 @@ async function parseArgs() {
     verbose: false
   };
 
+  const files = [];
   const args = getArgs(argv);
 
   for (let i = 2; i < args.length; i++) {
@@ -319,8 +270,14 @@ async function parseArgs() {
       }
 
       case '-m':
-      case '--multi': {
-        options.multi = true;
+      case '--release': {
+        options.release = true;
+        break;
+      }
+
+      case '-t':
+      case '--transpile': {
+        options.transpile = true;
         break;
       }
 
@@ -462,29 +419,27 @@ async function parseArgs() {
       }
 
       default: {
-        if (arg === '-') {
-          if (options.input)
-            options.output = null;
-          else
-            options.code = await readInput();
-          break;
-        }
-
         if (arg.length === 0 || arg[0] === '-')
           throw new Error(`Invalid argument: ${arg}.`);
 
-        if (options.input)
-          options.output = arg;
-        else
-          options.input = arg;
+        files.push(arg);
 
         break;
       }
     }
   }
 
-  if (!options.input)
-    options.input = '.';
+  if (options.transpile) {
+    options.files = files;
+    if (!options.output)
+      options.output = files.pop();
+  } else {
+    if (files.length > 0)
+      options.input = files[0];
+
+    if (!options.output && files.length > 1)
+      options.output = files[1];
+  }
 
   if (options.env === 'browser' && options.standalone)
     options.esm = false;

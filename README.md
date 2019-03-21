@@ -251,7 +251,8 @@ class MyPlugin {
   // for example).
   async compile(module, code) {
     assert(typeof code === 'string');
-    module.path; // Filename path.
+    module.filename; // Filename.
+    module.dirname; // Dirname.
     module.root; // Package root.
     module.resolve; // Module resolver (async).
     return code;

@@ -10,7 +10,7 @@
 
 const assert = require('assert');
 const bpkg = require('../');
-const {argv, stdin, stdout, stderr, exit} = process;
+const {argv, stdout, stderr, exit} = process;
 
 /*
  * Constants

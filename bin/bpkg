@@ -16,7 +16,7 @@ const {argv, stdout, stderr, exit} = process;
  * Constants
  */
 
-const VERSION = '0.5.2';
+const VERSION = '0.6.0';
 
 const HELP = `
   Usage: bpkg [options] [file]

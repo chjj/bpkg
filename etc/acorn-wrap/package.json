@@ -3,11 +3,10 @@
   "version": "0.0.0",
   "main": "./index.js",
   "dependencies": {
-    "acorn": "latest",
-    "acorn-walk": "latest",
-    "acorn-bigint": "latest",
-    "acorn-export-ns-from": "latest",
-    "acorn-dynamic-import": "latest",
-    "acorn-import-meta": "latest"
+    "acorn": "8.11.2",
+    "acorn-walk": "8.3.0",
+    "acorn-class-fields": "1.0.0",
+    "acorn-static-class-features": "1.0.0",
+    "acorn-private-methods": "1.0.0"
   }
 }

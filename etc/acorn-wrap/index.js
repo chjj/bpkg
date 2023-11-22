@@ -4,10 +4,9 @@ const acorn = require('acorn');
 const walk = require('acorn-walk');
 
 const Parser = acorn.Parser.extend(
-  require('acorn-bigint'),
-  require('acorn-export-ns-from'),
-  require('acorn-dynamic-import/src/index')['default'],
-  require('acorn-import-meta')
+  require('acorn-class-fields'),
+  require('acorn-static-class-features'),
+  require('acorn-private-methods')
 );
 
 walk.base.Import = (node, st, c) => {};

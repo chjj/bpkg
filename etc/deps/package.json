@@ -28,7 +28,6 @@
     "bfile": "latest",
     "minimatch": "latest",
     "tar": "latest",
-    "uglify-js": "latest",
-    "uglify-es": "latest"
+    "uglify-js": "latest"
   }
 }

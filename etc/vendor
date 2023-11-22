@@ -223,7 +223,6 @@ function buildUglify(name) {
   // patchTimers();
   buildConstants();
   buildUglify('uglify-js');
-  buildUglify('uglify-es');
 })().catch((err) => {
   console.error(String(err.stack));
   process.exit(1);

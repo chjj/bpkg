@@ -184,12 +184,6 @@ Uglify-JS:
 $ bpkg -bp [ uglify-js --toplevel ] ./bcrypto bcrypto.js
 ```
 
-Uglify-ES:
-
-``` bash
-$ bpkg -bp [ uglify-es --toplevel ] ./bcrypto bcrypto.js
-```
-
 TypeScript:
 
 ``` bash

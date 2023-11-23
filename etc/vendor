@@ -26,7 +26,7 @@ const builtins = [
   // ['constants-browserify', 'lib/builtins/constants.js'],
   ['crypto-browserify', 'lib/builtins/crypto.js'],
   ['domain-browser', 'lib/builtins/domain.js'],
-  ['events/', 'lib/builtins/events.js'],
+  ['events/', 'lib/builtins/events.js'], // update
   ['stream-http', 'lib/builtins/http.js'],
   ['https-browserify', 'lib/builtins/https.js'],
   // ['os-browserify', 'lib/builtins/os.js'],
@@ -38,8 +38,8 @@ const builtins = [
   ['string_decoder/', 'lib/builtins/string_decoder.js'],
   // ['timers-browserify', 'lib/builtins/timers.js'],
   ['tty-browserify', 'lib/builtins/tty.js'],
-  ['url/', 'lib/builtins/url.js'],
-  ['util/', 'lib/builtins/util.js'],
+  ['url/', 'lib/builtins/url.js'], // update
+  ['util/', 'lib/builtins/util.js'], // update
   ['vm-browserify', 'lib/builtins/vm.js'],
   ['browserify-zlib', 'lib/builtins/zlib.js']
 ];

@@ -1,4 +1,4 @@
-/* global globalThis, window */
+/* global window */
 /* eslint-env mocha */
 
 'use strict';

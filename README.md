@@ -217,7 +217,7 @@ const assert = require('assert');
 class MyPlugin {
   constructor(bundle, options) {
     bundle.root; // Main package root.
-    bundle.resolve; // Module resolver (async)
+    bundle.resolver; // Module resolver (async)
     options; // Options passed from the commandline (or directly).
   }
 
@@ -249,7 +249,7 @@ class MyPlugin {
     module.filename; // Filename.
     module.dirname; // Dirname.
     module.root; // Package root.
-    module.resolve; // Module resolver (async).
+    module.resolver; // Module resolver (async).
     return code;
   }
 
@@ -268,9 +268,9 @@ class MyPlugin {
     return code;
   }
 
-  // Rewrite location for module resolver.
-  async redirect(location, from) {
-    return location;
+  // Rewrite specifier for module resolver.
+  async redirect(specifier, from) {
+    return specifier;
   }
 
   // Only called in release mode, allows

@@ -20,7 +20,7 @@ $ bpkg -h
     -e, --env <name>         set environment, node or browser (default: node)
     -n, --node               set environment to node
     -b, --browser            set environment to browser
-    -x, --extensions <ext>   list of extensions (default: .js,.mjs,.json,.node)
+    -x, --extensions <ext>   list of extensions (default: .js,.json,.node)
     --external <names>       comma-separated blacklist of modules
     --local-only             only include local modules
     -f, --browser-field      force usage of package.json "browser" field
@@ -32,7 +32,6 @@ $ bpkg -h
     -l, --no-license         do not place licenses at the top of the bundle
     -d, --date <date>        set date for build (good for deterministic builds)
     -m, --release            output module as multiple files
-    -t, --transpile          transpile multiple files without releasing
     -T, --target             select target (cjs, umd, or esm)
     -M, --esm                output module as native ESM
     -C, --cjs                output module as CommonJS
@@ -271,14 +270,6 @@ class MyPlugin {
   // Rewrite specifier for module resolver.
   async redirect(specifier, from) {
     return specifier;
-  }
-
-  // Only called in release mode, allows
-  // you to "rewrite" the output filename.
-  async rewrite(module, path) {
-    // Example:
-    // return path.replace(/\.ts$/, '.js');
-    return path;
   }
 
   // Called once the bundle is built.

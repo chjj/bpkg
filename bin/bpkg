@@ -28,7 +28,7 @@ const HELP = `
     -e, --env <name>         set environment, node or browser (default: node)
     -n, --node               set environment to node
     -b, --browser            set environment to browser
-    -x, --extensions <ext>   list of extensions (default: .js,.mjs,.json,.node)
+    -x, --extensions <ext>   list of extensions (default: .js,.json,.node)
     --external <names>       comma-separated blacklist of modules
     --local-only             only include local modules
     -f, --browser-field      force usage of package.json "browser" field
@@ -40,7 +40,6 @@ const HELP = `
     -l, --no-license         do not place licenses at the top of the bundle
     -d, --date <date>        set date for build (good for deterministic builds)
     -m, --release            output module as multiple files
-    -t, --transpile          transpile multiple files without releasing
     -T, --target             select target (cjs, umd, or esm)
     -M, --esm                output module as native ESM
     -C, --cjs                output module as CommonJS
@@ -101,12 +100,11 @@ async function parseArgs() {
   const options = {
     __proto__: null,
     stream: stderr,
-    input: '.',
-    files: [],
+    input: null,
     output: null,
     code: null,
     env: 'node',
-    extensions: ['.js', '.mjs'],
+    extensions: ['.js'],
     external: [],
     localOnly: false,
     browserField: false,
@@ -118,7 +116,6 @@ async function parseArgs() {
     noLicense: false,
     time: new Date(),
     release: false,
-    transpile: false,
     target: null,
     loose: false,
     name: null,
@@ -130,7 +127,6 @@ async function parseArgs() {
     verbose: false
   };
 
-  const files = [];
   const args = getArgs(argv);
 
   for (let i = 2; i < args.length; i++) {
@@ -274,12 +270,6 @@ async function parseArgs() {
       case '-m':
       case '--release': {
         options.release = true;
-        break;
-      }
-
-      case '-t':
-      case '--transpile': {
-        options.transpile = true;
         break;
       }
 
@@ -451,24 +441,20 @@ async function parseArgs() {
         if (arg.length === 0 || arg[0] === '-')
           throw new Error(`Invalid argument: ${arg}.`);
 
-        files.push(arg);
+        if (options.input == null)
+          options.input = arg;
+        else if (options.output == null)
+          options.output = arg;
+        else
+          throw new Error(`Invalid argument: ${arg}.`);
 
         break;
       }
     }
   }
 
-  if (options.transpile) {
-    options.files = files;
-    if (!options.output)
-      options.output = files.pop();
-  } else {
-    if (files.length > 0)
-      options.input = files[0];
-
-    if (!options.output && files.length > 1)
-      options.output = files[1];
-  }
+  if (options.input == null)
+    options.input = '.';
 
   return options;
 }

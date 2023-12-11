@@ -3,11 +3,7 @@
 const acorn = require('acorn');
 const walk = require('acorn-walk');
 
-const Parser = acorn.Parser.extend(
-  require('acorn-class-fields'),
-  require('acorn-static-class-features'),
-  require('acorn-private-methods')
-);
+const Parser = acorn.Parser.extend();
 
 walk.base.Import = (node, st, c) => {};
 

@@ -48,108 +48,16 @@
  * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
- *
- * License for acorn-class-fields@1.0.0:
- *
- * Copyright (C) 2017-2018 by Adrian Heine
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- *
- * License for acorn-private-class-elements@1.0.0:
- *
- * Copyright (C) 2017-2018 by Adrian Heine
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- *
- * License for acorn-static-class-features@1.0.0:
- *
- * Copyright (C) 2017-2018 by Adrian Heine
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- *
- * License for acorn-private-methods@1.0.0:
- *
- * Copyright (C) 2017-2018 by Adrian Heine
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
  */
 
 var __node_modules__ = [
-[/* 0 */ 'acorn-wrap', '/index.js', function(exports, module, __filename, __dirname, __meta) {
+[/* 0 */ 'acorn-wrap', '/index.js', 0, function(exports, require, module, __filename, __dirname) {
 'use strict';
 
 const acorn = __node_require__(1 /* 'acorn' */);
 const walk = __node_require__(2 /* 'acorn-walk' */);
 
-const Parser = acorn.Parser.extend(
-  __node_require__(3 /* 'acorn-class-fields' */),
-  __node_require__(5 /* 'acorn-static-class-features' */),
-  __node_require__(6 /* 'acorn-private-methods' */)
-);
+const Parser = acorn.Parser.extend();
 
 walk.base.Import = (node, st, c) => {};
 
@@ -160,7 +68,7 @@ acorn.walk = walk;
 
 module.exports = acorn;
 }],
-[/* 1 */ 'acorn', '/dist/acorn.js', function(exports, module, __filename, __dirname, __meta) {
+[/* 1 */ 'acorn', '/dist/acorn.js', 0, function(exports, require, module, __filename, __dirname) {
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
   typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -6163,7 +6071,7 @@ module.exports = acorn;
 
 }));
 }],
-[/* 2 */ 'acorn-walk', '/dist/walk.js', function(exports, module, __filename, __dirname, __meta) {
+[/* 2 */ 'acorn-walk', '/dist/walk.js', 0, function(exports, require, module, __filename, __dirname) {
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
   typeof define === 'function' && define.amd ? define(['exports'], factory) :
@@ -6625,381 +6533,28 @@ module.exports = acorn;
   exports.simple = simple;
 
 }));
-}],
-[/* 3 */ 'acorn-class-fields', '/index.js', function(exports, module, __filename, __dirname, __meta) {
-"use strict"
-
-const privateClassElements = __node_require__(4 /* 'acorn-private-class-elements' */)
-
-module.exports = function(Parser) {
-  const acorn = Parser.acorn || __node_require__(1 /* 'acorn' */)
-  const tt = acorn.tokTypes
-
-  Parser = privateClassElements(Parser)
-  return class extends Parser {
-    _maybeParseFieldValue(field) {
-      if (this.eat(tt.eq)) {
-        const oldInFieldValue = this._inFieldValue
-        this._inFieldValue = true
-        if (this.type === tt.name && this.value === "await" && (this.inAsync || this.options.allowAwaitOutsideFunction)) {
-          field.value = this.parseAwait()
-        } else field.value = this.parseExpression()
-        this._inFieldValue = oldInFieldValue
-      } else field.value = null
-    }
-
-    // Parse fields
-    parseClassElement(_constructorAllowsSuper) {
-      if (this.options.ecmaVersion >= 8 && (this.type == tt.name || this.type.keyword || this.type == this.privateIdentifierToken || this.type == tt.bracketL || this.type == tt.string || this.type == tt.num)) {
-        const branch = this._branch()
-        if (branch.type == tt.bracketL) {
-          let count = 0
-          do {
-            if (branch.eat(tt.bracketL)) ++count
-            else if (branch.eat(tt.bracketR)) --count
-            else branch.next()
-          } while (count > 0)
-        } else branch.next(true)
-        let isField = branch.type == tt.eq || branch.type == tt.semi
-        if (!isField && branch.canInsertSemicolon()) {
-          isField = branch.type != tt.parenL
-        }
-        if (isField) {
-          const node = this.startNode()
-          if (this.type == this.privateIdentifierToken) {
-            this.parsePrivateClassElementName(node)
-          } else {
-            this.parsePropertyName(node)
-          }
-          if ((node.key.type === "Identifier" && node.key.name === "constructor") ||
-              (node.key.type === "Literal" && node.key.value === "constructor")) {
-            this.raise(node.key.start, "Classes may not have a field called constructor")
-          }
-          this.enterScope(64 | 2 | 1) // See acorn's scopeflags.js
-          this._maybeParseFieldValue(node)
-          this.exitScope()
-          this.finishNode(node, "PropertyDefinition")
-          this.semicolon()
-          return node
-        }
-      }
-
-      return super.parseClassElement.apply(this, arguments)
-    }
-
-    // Prohibit arguments in class field initializers
-    parseIdent(liberal, isBinding) {
-      const ident = super.parseIdent(liberal, isBinding)
-      if (this._inFieldValue && ident.name == "arguments") this.raise(ident.start, "A class field initializer may not contain arguments")
-      return ident
-    }
-  }
-}
-}],
-[/* 4 */ 'acorn-private-class-elements', '/index.js', function(exports, module, __filename, __dirname, __meta) {
-"use strict"
-
-const getPrototype = Object.getPrototypeOf || (o => o.__proto__)
-
-const getAcorn = Parser => {
-  if (Parser.acorn) return Parser.acorn
-
-  const acorn = __node_require__(1 /* 'acorn' */)
-
-  if (acorn.version.indexOf("6.") != 0 && acorn.version.indexOf("6.0.") == 0 && acorn.version.indexOf("7.") != 0) {
-    throw new Error(`acorn-private-class-elements requires acorn@^6.1.0 or acorn@7.0.0, not ${acorn.version}`)
-  }
-
-  // Make sure `Parser` comes from the same acorn as we `require`d,
-  // otherwise the comparisons fail.
-  for (let cur = Parser; cur && cur !== acorn.Parser; cur = getPrototype(cur)) {
-    if (cur !== acorn.Parser) {
-      throw new Error("acorn-private-class-elements does not support mixing different acorn copies")
-    }
-  }
-  return acorn
-}
-
-module.exports = function(Parser) {
-  // Only load this plugin once.
-  if (Parser.prototype.parsePrivateName) {
-    return Parser
-  }
-
-  const acorn = getAcorn(Parser)
-
-  Parser = class extends Parser {
-    _branch() {
-      this.__branch = this.__branch || new Parser({ecmaVersion: this.options.ecmaVersion}, this.input)
-      this.__branch.end = this.end
-      this.__branch.pos = this.pos
-      this.__branch.type = this.type
-      this.__branch.value = this.value
-      this.__branch.containsEsc = this.containsEsc
-      return this.__branch
-    }
-
-    parsePrivateClassElementName(element) {
-      element.computed = false
-      element.key = this.parsePrivateName()
-      if (element.key.name == "constructor") this.raise(element.key.start, "Classes may not have a private element named constructor")
-      const accept = {get: "set", set: "get"}[element.kind]
-      const privateBoundNames = this._privateBoundNames
-      if (Object.prototype.hasOwnProperty.call(privateBoundNames, element.key.name) && privateBoundNames[element.key.name] !== accept) {
-        this.raise(element.start, "Duplicate private element")
-      }
-      privateBoundNames[element.key.name] = element.kind || true
-      delete this._unresolvedPrivateNames[element.key.name]
-      return element.key
-    }
-
-    parsePrivateName() {
-      const node = this.startNode()
-      node.name = this.value
-      this.next()
-      this.finishNode(node, "PrivateIdentifier")
-      if (this.options.allowReserved == "never") this.checkUnreserved(node)
-      return node
-    }
-
-    // Parse # token
-    getTokenFromCode(code) {
-      if (code === 35) {
-        ++this.pos
-        const word = this.readWord1()
-        return this.finishToken(this.privateIdentifierToken, word)
-      }
-      return super.getTokenFromCode(code)
-    }
-
-    // Manage stacks and check for undeclared private names
-    parseClass(node, isStatement) {
-      const oldOuterPrivateBoundNames = this._outerPrivateBoundNames
-      this._outerPrivateBoundNames = this._privateBoundNames
-      this._privateBoundNames = Object.create(this._privateBoundNames || null)
-      const oldOuterUnresolvedPrivateNames = this._outerUnresolvedPrivateNames
-      this._outerUnresolvedPrivateNames = this._unresolvedPrivateNames
-      this._unresolvedPrivateNames = Object.create(null)
-
-      const _return = super.parseClass(node, isStatement)
-
-      const unresolvedPrivateNames = this._unresolvedPrivateNames
-      this._privateBoundNames = this._outerPrivateBoundNames
-      this._outerPrivateBoundNames = oldOuterPrivateBoundNames
-      this._unresolvedPrivateNames = this._outerUnresolvedPrivateNames
-      this._outerUnresolvedPrivateNames = oldOuterUnresolvedPrivateNames
-      if (!this._unresolvedPrivateNames) {
-        const names = Object.keys(unresolvedPrivateNames)
-        if (names.length) {
-          names.sort((n1, n2) => unresolvedPrivateNames[n1] - unresolvedPrivateNames[n2])
-          this.raise(unresolvedPrivateNames[names[0]], "Usage of undeclared private name")
-        }
-      } else Object.assign(this._unresolvedPrivateNames, unresolvedPrivateNames)
-      return _return
-    }
-
-    // Class heritage is evaluated with outer private environment
-    parseClassSuper(node) {
-      const privateBoundNames = this._privateBoundNames
-      this._privateBoundNames = this._outerPrivateBoundNames
-      const unresolvedPrivateNames = this._unresolvedPrivateNames
-      this._unresolvedPrivateNames = this._outerUnresolvedPrivateNames
-      const _return = super.parseClassSuper(node)
-      this._privateBoundNames = privateBoundNames
-      this._unresolvedPrivateNames = unresolvedPrivateNames
-      return _return
-    }
-
-    // Parse private element access
-    parseSubscript(base, startPos, startLoc, _noCalls, _maybeAsyncArrow, _optionalChained) {
-      const optionalSupported = this.options.ecmaVersion >= 11 && acorn.tokTypes.questionDot
-      const branch = this._branch()
-      if (!(
-        (branch.eat(acorn.tokTypes.dot) || (optionalSupported && branch.eat(acorn.tokTypes.questionDot))) &&
-        branch.type == this.privateIdentifierToken
-      )) {
-        return super.parseSubscript.apply(this, arguments)
-      }
-      let optional = false
-      if (!this.eat(acorn.tokTypes.dot)) {
-        this.expect(acorn.tokTypes.questionDot)
-        optional = true
-      }
-      let node = this.startNodeAt(startPos, startLoc)
-      node.object = base
-      node.computed = false
-      if (optionalSupported) {
-        node.optional = optional
-      }
-      if (this.type == this.privateIdentifierToken) {
-        if (base.type == "Super") {
-          this.raise(this.start, "Cannot access private element on super")
-        }
-        node.property = this.parsePrivateName()
-        if (!this._privateBoundNames || !this._privateBoundNames[node.property.name]) {
-          if (!this._unresolvedPrivateNames) {
-            this.raise(node.property.start, "Usage of undeclared private name")
-          }
-          this._unresolvedPrivateNames[node.property.name] = node.property.start
-        }
-      } else {
-        node.property = this.parseIdent(true)
-      }
-      return this.finishNode(node, "MemberExpression")
-    }
-
-    // Prohibit delete of private class elements
-    parseMaybeUnary(refDestructuringErrors, sawUnary) {
-      const _return = super.parseMaybeUnary(refDestructuringErrors, sawUnary)
-      if (_return.operator == "delete") {
-        if (_return.argument.type == "MemberExpression" && _return.argument.property.type == "PrivateIdentifier") {
-          this.raise(_return.start, "Private elements may not be deleted")
-        }
-      }
-      return _return
-    }
-  }
-  Parser.prototype.privateIdentifierToken = new acorn.TokenType("privateIdentifier")
-  return Parser
-}
-}],
-[/* 5 */ 'acorn-static-class-features', '/index.js', function(exports, module, __filename, __dirname, __meta) {
-"use strict"
-
-const privateClassElements = __node_require__(4 /* 'acorn-private-class-elements' */)
-
-module.exports = function(Parser) {
-  const ExtendedParser = privateClassElements(Parser)
-
-  const acorn = Parser.acorn || __node_require__(1 /* 'acorn' */)
-  const tt = acorn.tokTypes
-
-  return class extends ExtendedParser {
-    _maybeParseFieldValue(field) {
-      if (this.eat(tt.eq)) {
-        const oldInFieldValue = this._inStaticFieldScope
-        this._inStaticFieldScope = this.currentThisScope()
-        field.value = this.parseExpression()
-        this._inStaticFieldScope = oldInFieldValue
-      } else field.value = null
-    }
-
-    // Parse fields
-    parseClassElement(_constructorAllowsSuper) {
-      if (this.options.ecmaVersion < 8 || !this.isContextual("static")) {
-        return super.parseClassElement.apply(this, arguments)
-      }
-
-      const branch = this._branch()
-      branch.next()
-      if ([tt.name, tt.bracketL, tt.string, tt.num, this.privateIdentifierToken].indexOf(branch.type) == -1 && !branch.type.keyword) {
-        return super.parseClassElement.apply(this, arguments)
-      }
-      if (branch.type == tt.bracketL) {
-        let count = 0
-        do {
-          if (branch.eat(tt.bracketL)) ++count
-          else if (branch.eat(tt.bracketR)) --count
-          else branch.next()
-        } while (count > 0)
-      } else branch.next()
-      if (branch.type != tt.eq && !branch.canInsertSemicolon() && branch.type != tt.semi) {
-        return super.parseClassElement.apply(this, arguments)
-      }
-
-      const node = this.startNode()
-      node.static = this.eatContextual("static")
-      if (this.type == this.privateIdentifierToken) {
-        this.parsePrivateClassElementName(node)
-      } else {
-        this.parsePropertyName(node)
-      }
-      if ((node.key.type === "Identifier" && node.key.name === "constructor") ||
-          (node.key.type === "Literal" && !node.computed && node.key.value === "constructor")) {
-        this.raise(node.key.start, "Classes may not have a field called constructor")
-      }
-      if ((node.key.name || node.key.value) === "prototype" && !node.computed) {
-        this.raise(node.key.start, "Classes may not have a static property named prototype")
-      }
-
-      this.enterScope(64 | 2 | 1) // See acorn's scopeflags.js
-      this._maybeParseFieldValue(node)
-      this.exitScope()
-      this.finishNode(node, "PropertyDefinition")
-      this.semicolon()
-      return node
-    }
-
-    // Parse private static methods
-    parsePropertyName(prop) {
-      if (prop.static && this.type == this.privateIdentifierToken) {
-        this.parsePrivateClassElementName(prop)
-      } else {
-        super.parsePropertyName(prop)
-      }
-    }
-
-    // Prohibit arguments in class field initializers
-    parseIdent(liberal, isBinding) {
-      const ident = super.parseIdent(liberal, isBinding)
-      if (this._inStaticFieldScope && this.currentThisScope() === this._inStaticFieldScope && ident.name == "arguments") {
-        this.raise(ident.start, "A static class field initializer may not contain arguments")
-      }
-      return ident
-    }
-  }
-}
-}],
-[/* 6 */ 'acorn-private-methods', '/dist/acorn-private-methods.js', function(exports, module, __filename, __dirname, __meta) {
-'use strict';
-
-var privateClassElements = __node_require__(4 /* 'acorn-private-class-elements' */);
-
-function _interopDefaultLegacy (e) { return e && typeof e === 'object' && 'default' in e ? e : { 'default': e }; }
-
-var privateClassElements__default = /*#__PURE__*/_interopDefaultLegacy(privateClassElements);
-
-// eslint-disable-next-line node/no-unsupported-features/es-syntax
-
-// eslint-disable-next-line node/no-unsupported-features/es-syntax
-function privateMethods(Parser) {
-  const ExtendedParser = privateClassElements__default['default'](Parser);
-
-  return class extends ExtendedParser {
-    // Parse private methods
-    parseClassElement(_constructorAllowsSuper) {
-      const oldInClassMemberName = this._inClassMemberName;
-      this._inClassMemberName = true;
-      const result = super.parseClassElement.apply(this, arguments);
-      this._inClassMemberName = oldInClassMemberName;
-      return result
-    }
-
-    parsePropertyName(prop) {
-      const isPrivate = this.options.ecmaVersion >= 8 && this._inClassMemberName && this.type == this.privateIdentifierToken && !prop.static;
-      this._inClassMemberName = false;
-      if (!isPrivate) return super.parsePropertyName(prop)
-      return this.parsePrivateClassElementName(prop)
-    }
-  }
-}
-
-module.exports = privateMethods;
-//# sourceMappingURL=acorn-private-methods.js.map
 }]
 ];
 
 var __node_cache__ = [];
 
-function __node_error__(location) {
-  var err = new Error('Cannot find module \'' + location + '\'');
+function __node_error__(specifier) {
+  var err = new Error('Cannot find module \'' + specifier + '\'');
   err.code = 'MODULE_NOT_FOUND';
-  throw err;
+  return err;
+}
+
+function __node_throw__(specifier) {
+  throw __node_error__(specifier);
+}
+
+function __node_reject__(specifier) {
+  return Promise.reject(__node_error__(specifier));
 }
 
 function __node_require__(id) {
   if ((id >>> 0) !== id || id > __node_modules__.length)
-    return __node_error__(id);
+    return __node_throw__(id);
 
   while (__node_cache__.length <= id)
     __node_cache__.push(null);
@@ -7012,7 +6567,8 @@ function __node_require__(id) {
   var mod = __node_modules__[id];
   var name = mod[0];
   var path = mod[1];
-  var func = mod[2];
+  var esm = mod[2];
+  var func = mod[3];
   var meta;
 
   var _exports = exports;
@@ -7022,20 +6578,27 @@ function __node_require__(id) {
     _exports = {};
     _module = {
       id: '/' + name + path,
+      path: ('/' + name + path).split('/').slice(0, -1).join('/'),
       exports: _exports,
       parent: module.parent,
       filename: module.filename,
+      isPreloading: false,
       loaded: false,
       children: module.children,
-      paths: module.paths
+      paths: module.paths,
+      require: require
     };
   }
 
   __node_cache__[id] = _module;
 
   try {
-    func.call(_exports, _exports, _module,
-              __filename, __dirname, meta);
+    if (esm) {
+      func.call(void 0, _exports, meta, _module);
+    } else {
+      func.call(_exports, _exports, require,
+                _module, __filename, __dirname);
+    }
   } catch (e) {
     __node_cache__[id] = null;
     throw e;

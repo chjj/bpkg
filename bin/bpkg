@@ -26,6 +26,7 @@ const HELP = `
     -v, --version            output the version number
     -o, --output <file>      output file or directory (default: stdout)
     -e, --env <name>         set environment, node or browser (default: node)
+    -R, --renv <name>        set resolver environment (default: --env)
     -n, --node               set environment to node
     -b, --browser            set environment to browser
     -x, --extensions <ext>   list of extensions (default: .js,.json,.node)
@@ -51,6 +52,8 @@ const HELP = `
     -I, --imports <a,b,..>   comma-separated list of imports
     -E, --environment <k=v>  key-value pairs for process.env
     -g, --globals <k=v>      key-value pairs for global
+    --fields     <a,b,..>    user shim fields
+    --conditions <a,b,..>    user conditionals
     -h, --help               output usage information
 `;
 
@@ -104,10 +107,10 @@ async function parseArgs() {
     output: null,
     code: null,
     env: 'node',
+    renv: null,
     extensions: ['.js'],
     external: [],
     localOnly: false,
-    browserField: false,
     ignoreMissing: false,
     collectBindings: false,
     ignoreBindings: false,
@@ -122,6 +125,8 @@ async function parseArgs() {
     plugins: [],
     environment: Object.create(null),
     globals: Object.create(null),
+    fields: [],
+    conditions: [],
     requires: [],
     imports: [],
     verbose: false
@@ -163,6 +168,18 @@ async function parseArgs() {
           throw new Error(`Invalid option for: ${arg}.`);
 
         options.env = next;
+
+        i += 1;
+
+        break;
+      }
+
+      case '-R':
+      case '--renv': {
+        if (!next || next[0] === '-')
+          throw new Error(`Invalid option for: ${arg}.`);
+
+        options.renv = next;
 
         i += 1;
 
@@ -211,7 +228,7 @@ async function parseArgs() {
 
       case '-f':
       case '--browser-field': {
-        options.browserField = true;
+        options.renv = 'browser';
         break;
       }
 
@@ -418,6 +435,28 @@ async function parseArgs() {
           throw new Error(`Invalid option for: ${arg}.`);
 
         options.imports.push(...next.split(','));
+
+        i += 1;
+
+        break;
+      }
+
+      case '--fields': {
+        if (!next || next[0] === '-')
+          throw new Error(`Invalid option for: ${arg}.`);
+
+        options.fields.push(...next.split(','));
+
+        i += 1;
+
+        break;
+      }
+
+      case '--conditions': {
+        if (!next || next[0] === '-')
+          throw new Error(`Invalid option for: ${arg}.`);
+
+        options.conditions.push(...next.split(','));
 
         i += 1;
 

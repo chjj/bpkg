@@ -19,7 +19,7 @@
     "bpkg": "./bin/bpkg"
   },
   "scripts": {
-    "lint": "eslint bin/* etc/vendor lib/*.js lib/plugins lib/templates test/ || exit 0",
+    "lint": "eslint bin/* etc/vendor lib/*.js lib/analyze lib/plugins lib/templates test/ || exit 0",
     "test": "bmocha --reporter spec test/*-test.js"
   },
   "engines": {

@@ -6580,7 +6580,7 @@ function __node_require__(id) {
       id: '/' + name + path,
       path: ('/' + name + path).split('/').slice(0, -1).join('/'),
       exports: _exports,
-      parent: module.parent,
+      parent: module,
       filename: module.filename,
       isPreloading: false,
       loaded: false,

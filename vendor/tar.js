@@ -5495,7 +5495,7 @@ function __node_require__(id) {
     _module = {
       id: '/' + name + path,
       exports: _exports,
-      parent: module.parent,
+      parent: module,
       filename: module.filename,
       loaded: false,
       children: module.children,

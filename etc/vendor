@@ -48,7 +48,8 @@ const modules = [
   ['./acorn-wrap', 'vendor/acorn.js'],
   ['bfile', 'vendor/bfile.js'],
   ['minimatch', 'vendor/minimatch.js'],
-  ['tar', 'vendor/tar.js']
+  ['tar', 'vendor/tar.js'],
+  ['terser', 'vendor/terser.js']
 ];
 
 /*
@@ -75,8 +76,8 @@ async function buildModule(name, path, browser) {
     target: 'cjs',
     loose: true,
     time: DATE,
-    browserField: browser,
-    input,
+    renv: browser ? 'browser' : null,
+    input: name === 'terser' ? `${input}/dist/bundle.min.js` : input,
     output
   });
 }

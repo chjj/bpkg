@@ -46,7 +46,6 @@ const HELP = `
     -C, --cjs                output module as CommonJS
     -u, --umd                append UMD initialization code to browser bundle
     -L, --loose              loose ESM transformations
-    -S, --shake              poor man's tree shaking
     -N, --name <name>        name to use for global exposure (default: pkg.name)
     -p, --plugin <plugin>    use plugin
     -r, --requires <a,b,..>  comma-separated list of requires
@@ -122,7 +121,6 @@ async function parseArgs() {
     release: false,
     target: null,
     loose: false,
-    shake: false,
     name: null,
     plugins: [],
     environment: Object.create(null),
@@ -328,12 +326,6 @@ async function parseArgs() {
       case '-L':
       case '--loose': {
         options.loose = true;
-        break;
-      }
-
-      case '-S':
-      case '--shake': {
-        options.shake = true;
         break;
       }
 

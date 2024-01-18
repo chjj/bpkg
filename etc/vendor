@@ -74,10 +74,10 @@ async function buildModule(name, path, browser) {
   await bpkg({
     env: 'node',
     target: 'cjs',
-    loose: true,
+    loose: name !== 'terser',
     time: DATE,
     renv: browser ? 'browser' : null,
-    input: name === 'terser' ? `${input}/dist/bundle.min.js` : input,
+    input,
     output
   });
 }

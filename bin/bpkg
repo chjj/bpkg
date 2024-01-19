@@ -54,6 +54,9 @@ const HELP = `
     -g, --globals <k=v>      key-value pairs for global
     --fields     <a,b,..>    user shim fields
     --conditions <a,b,..>    user conditionals
+    --entry-type <type>      main module entry type ("commonjs" or "module")
+    --wasm-modules           experimental wasm modules
+    --detect-module          experimental module detection
     -h, --help               output usage information
 `;
 
@@ -125,10 +128,13 @@ async function parseArgs() {
     plugins: [],
     environment: Object.create(null),
     globals: Object.create(null),
-    fields: [],
-    conditions: [],
     requires: [],
     imports: [],
+    fields: [],
+    conditions: [],
+    entryType: null,
+    wasmModules: false,
+    detectModule: false,
     verbose: false
   };
 
@@ -460,6 +466,30 @@ async function parseArgs() {
 
         i += 1;
 
+        break;
+      }
+
+      case '--entry-type': {
+        if (!next || next[0] === '-')
+          throw new Error(`Invalid option for: ${arg}.`);
+
+        if (next !== 'commonjs' && next !== 'module')
+          throw new Error('--entry-type must be "commonjs" or "module".');
+
+        options.entryType = next;
+
+        i += 1;
+
+        break;
+      }
+
+      case '--wasm-modules': {
+        options.wasmModules = true;
+        break;
+      }
+
+      case '--detect-module': {
+        options.detectModule = true;
         break;
       }
 

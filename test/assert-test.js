@@ -133,6 +133,16 @@ describe('Assert', function() {
     assert(assert.strict);
     assert(assert.ok === assert);
     assert(assert.AssertionError);
+    // eslint-disable-next-line no-prototype-builtins
+    assert(Error.isPrototypeOf(assert.AssertionError));
+  });
+
+  it('should have error', () => {
+    const err = new assert.AssertionError({ message: 'x' });
+
+    assert(err instanceof Error);
+    assert.equal(err.name, 'AssertionError');
+    assert.match(String(err.stack), /^AssertionError \[ERR_ASSERTION\]/);
   });
 
   it('should do assert', () => {
@@ -355,6 +365,13 @@ describe('Assert', function() {
     assert.throws(() => {
       assert.ifError('foobar');
     }, /foobar/);
+  });
+
+  it('should match strings', () => {
+    assert.match('a', /a/);
+    assert.doesNotMatch('b', /a/);
+    assert.throws(() => assert.match('b', /a/), /did not match/);
+    assert.throws(() => assert.doesNotMatch('a', /a/), /to not match/);
   });
 
   it('should do deep equal', () => {

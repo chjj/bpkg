@@ -3062,6 +3062,80 @@ describe('Buffer', () => {
         });
         assert.throws(() => Buffer.from(input), errMsg);
       });
+
+      Buffer.allocUnsafe(10); // Should not throw.
+      Buffer.from('deadbeaf', 'hex'); // Should not throw.
+
+      {
+        const u16 = new Uint16Array([0xffff]);
+        const b16 = Buffer.copyBytesFrom(u16);
+        u16[0] = 0;
+        assert.strictEqual(b16.length, 2);
+        assert.strictEqual(b16[0], 255);
+        assert.strictEqual(b16[1], 255);
+      }
+
+      {
+        const u16 = new Uint16Array([0, 0xffff]);
+        const b16 = Buffer.copyBytesFrom(u16, 1, 5);
+        u16[0] = 0xffff;
+        u16[1] = 0;
+        assert.strictEqual(b16.length, 2);
+        assert.strictEqual(b16[0], 255);
+        assert.strictEqual(b16[1], 255);
+      }
+
+      {
+        const u32 = new Uint32Array([0xffffffff]);
+        const b32 = Buffer.copyBytesFrom(u32);
+        u32[0] = 0;
+        assert.strictEqual(b32.length, 4);
+        assert.strictEqual(b32[0], 255);
+        assert.strictEqual(b32[1], 255);
+        assert.strictEqual(b32[2], 255);
+        assert.strictEqual(b32[3], 255);
+      }
+
+      assert.throws(() => {
+        Buffer.copyBytesFrom();
+      }, TypeError);
+
+      {
+        const dv = new DataView(new ArrayBuffer(1));
+        assert.throws(() => {
+          Buffer.copyBytesFrom(dv);
+        }, TypeError);
+      }
+
+      ['', Symbol(), true, false, {}, [], () => {}, 1, 1n, null, undefined].forEach(
+        notTypedArray => assert.throws(() => {
+          Buffer.copyBytesFrom(notTypedArray);
+        }, TypeError)
+      );
+
+      ['', Symbol(), true, false, {}, [], () => {}, 1n].forEach(notANumber =>
+        assert.throws(() => {
+          Buffer.copyBytesFrom(new Uint8Array(1), notANumber);
+        }, TypeError)
+      );
+
+      [-1, NaN, 1.1, -Infinity].forEach(outOfRange =>
+        assert.throws(() => {
+          Buffer.copyBytesFrom(new Uint8Array(1), outOfRange);
+        }, RangeError)
+      );
+
+      ['', Symbol(), true, false, {}, [], () => {}, 1n].forEach(notANumber =>
+        assert.throws(() => {
+          Buffer.copyBytesFrom(new Uint8Array(1), 0, notANumber);
+        }, TypeError)
+      );
+
+      [-1, NaN, 1.1, -Infinity].forEach(outOfRange =>
+        assert.throws(() => {
+          Buffer.copyBytesFrom(new Uint8Array(1), 0, outOfRange);
+        }, RangeError)
+      );
     });
 
     it('test-buffer-includes', () => {

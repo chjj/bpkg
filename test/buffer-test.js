@@ -4151,6 +4151,495 @@ describe('Buffer', () => {
       }
     });
 
+    it('test-buffer-read', () => {
+      // Testing basic buffer read functions
+      const buf = Buffer.from([0xa4, 0xfd, 0x48, 0xea, 0xcf, 0xff, 0xd9, 0x01, 0xde]);
+
+      function read(buff, funx, args, expected) {
+        assert.strictEqual(buff[funx](...args), expected);
+        assert.throws(
+          () => buff[funx](-1, args[1]),
+          RangeError
+        );
+      }
+
+      // Testing basic functionality of readDoubleBE() and readDoubleLE()
+      read(buf, 'readDoubleBE', [1], -3.1827727774563287e+295);
+      read(buf, 'readDoubleLE', [1], -6.966010051009108e+144);
+
+      // Testing basic functionality of readFloatBE() and readFloatLE()
+      read(buf, 'readFloatBE', [1], -1.6691549692541768e+37);
+      read(buf, 'readFloatLE', [1], -7861303808);
+
+      // Testing basic functionality of readInt8()
+      read(buf, 'readInt8', [1], -3);
+
+      // Testing basic functionality of readInt16BE() and readInt16LE()
+      read(buf, 'readInt16BE', [1], -696);
+      read(buf, 'readInt16LE', [1], 0x48fd);
+
+      // Testing basic functionality of readInt32BE() and readInt32LE()
+      read(buf, 'readInt32BE', [1], -45552945);
+      read(buf, 'readInt32LE', [1], -806729475);
+
+      // Testing basic functionality of readIntBE() and readIntLE()
+      read(buf, 'readIntBE', [1, 1], -3);
+      read(buf, 'readIntLE', [2, 1], 0x48);
+
+      // Testing basic functionality of readUInt8()
+      read(buf, 'readUInt8', [1], 0xfd);
+
+      // Testing basic functionality of readUInt16BE() and readUInt16LE()
+      read(buf, 'readUInt16BE', [2], 0x48ea);
+      read(buf, 'readUInt16LE', [2], 0xea48);
+
+      // Testing basic functionality of readUInt32BE() and readUInt32LE()
+      read(buf, 'readUInt32BE', [1], 0xfd48eacf);
+      read(buf, 'readUInt32LE', [1], 0xcfea48fd);
+
+      // Testing basic functionality of readUIntBE() and readUIntLE()
+      read(buf, 'readUIntBE', [2, 2], 0x48ea);
+      read(buf, 'readUIntLE', [2, 2], 0xea48);
+
+      // Attempt to overflow buffers, similar to previous bug in array buffers
+      assert.throws(
+        () => Buffer.allocUnsafe(8).readFloatBE(0xffffffff), RangeError);
+
+      assert.throws(
+        () => Buffer.allocUnsafe(8).readFloatLE(0xffffffff), RangeError);
+
+      // Ensure negative values can't get past offset
+      assert.throws(
+        () => Buffer.allocUnsafe(8).readFloatBE(-1), RangeError);
+      assert.throws(
+        () => Buffer.allocUnsafe(8).readFloatLE(-1), RangeError);
+
+      // Offset checks
+      {
+        const buf = Buffer.allocUnsafe(0);
+
+        assert.throws(
+          () => buf.readUInt8(0), RangeError);
+        assert.throws(
+          () => buf.readInt8(0), RangeError);
+      }
+
+      [16, 32].forEach((bit) => {
+        const buf = Buffer.allocUnsafe(bit / 8 - 1);
+        [`Int${bit}B`, `Int${bit}L`, `UInt${bit}B`, `UInt${bit}L`].forEach((fn) => {
+          assert.throws(
+            () => buf[`read${fn}E`](0), RangeError);
+        });
+      });
+
+      [16, 32].forEach((bits) => {
+        const buf = Buffer.from([0xFF, 0xFF, 0xFF, 0xFF]);
+        ['LE', 'BE'].forEach((endian) => {
+          assert.strictEqual(buf[`readUInt${bits}${endian}`](0),
+                             (0xFFFFFFFF >>> (32 - bits)));
+
+          assert.strictEqual(buf[`readInt${bits}${endian}`](0),
+                             (0xFFFFFFFF >> (32 - bits)));
+        });
+      });
+    });
+
+    it('test-buffer-readdouble', () => {
+      // Test (64 bit) double
+      const buffer = Buffer.allocUnsafe(8);
+
+      buffer[0] = 0x55;
+      buffer[1] = 0x55;
+      buffer[2] = 0x55;
+      buffer[3] = 0x55;
+      buffer[4] = 0x55;
+      buffer[5] = 0x55;
+      buffer[6] = 0xd5;
+      buffer[7] = 0x3f;
+      assert.strictEqual(buffer.readDoubleBE(0), 1.1945305291680097e+103);
+      assert.strictEqual(buffer.readDoubleLE(0), 0.3333333333333333);
+
+      buffer[0] = 1;
+      buffer[1] = 0;
+      buffer[2] = 0;
+      buffer[3] = 0;
+      buffer[4] = 0;
+      buffer[5] = 0;
+      buffer[6] = 0xf0;
+      buffer[7] = 0x3f;
+      assert.strictEqual(buffer.readDoubleBE(0), 7.291122019655968e-304);
+      assert.strictEqual(buffer.readDoubleLE(0), 1.0000000000000002);
+
+      buffer[0] = 2;
+      assert.strictEqual(buffer.readDoubleBE(0), 4.778309726801735e-299);
+      assert.strictEqual(buffer.readDoubleLE(0), 1.0000000000000004);
+
+      buffer[0] = 1;
+      buffer[6] = 0;
+      buffer[7] = 0;
+      // eslint-disable-next-line no-loss-of-precision
+      assert.strictEqual(buffer.readDoubleBE(0), 7.291122019556398e-304);
+      assert.strictEqual(buffer.readDoubleLE(0), 5e-324);
+
+      buffer[0] = 0xff;
+      buffer[1] = 0xff;
+      buffer[2] = 0xff;
+      buffer[3] = 0xff;
+      buffer[4] = 0xff;
+      buffer[5] = 0xff;
+      buffer[6] = 0x0f;
+      buffer[7] = 0x00;
+      assert.ok(Number.isNaN(buffer.readDoubleBE(0)));
+      assert.strictEqual(buffer.readDoubleLE(0), 2.225073858507201e-308);
+
+      buffer[6] = 0xef;
+      buffer[7] = 0x7f;
+      assert.ok(Number.isNaN(buffer.readDoubleBE(0)));
+      assert.strictEqual(buffer.readDoubleLE(0), 1.7976931348623157e+308);
+
+      buffer[0] = 0;
+      buffer[1] = 0;
+      buffer[2] = 0;
+      buffer[3] = 0;
+      buffer[4] = 0;
+      buffer[5] = 0;
+      buffer[6] = 0xf0;
+      buffer[7] = 0x3f;
+      assert.strictEqual(buffer.readDoubleBE(0), 3.03865e-319);
+      assert.strictEqual(buffer.readDoubleLE(0), 1);
+
+      buffer[6] = 0;
+      buffer[7] = 0x40;
+      assert.strictEqual(buffer.readDoubleBE(0), 3.16e-322);
+      assert.strictEqual(buffer.readDoubleLE(0), 2);
+
+      buffer[7] = 0xc0;
+      assert.strictEqual(buffer.readDoubleBE(0), 9.5e-322);
+      assert.strictEqual(buffer.readDoubleLE(0), -2);
+
+      buffer[6] = 0x10;
+      buffer[7] = 0;
+      assert.strictEqual(buffer.readDoubleBE(0), 2.0237e-320);
+      assert.strictEqual(buffer.readDoubleLE(0), 2.2250738585072014e-308);
+
+      buffer[6] = 0;
+      assert.strictEqual(buffer.readDoubleBE(0), 0);
+      assert.strictEqual(buffer.readDoubleLE(0), 0);
+      assert.ok(1 / buffer.readDoubleLE(0) >= 0);
+
+      buffer[7] = 0x80;
+      assert.strictEqual(buffer.readDoubleBE(0), 6.3e-322);
+      assert.strictEqual(buffer.readDoubleLE(0), -0);
+      assert.ok(1 / buffer.readDoubleLE(0) < 0);
+
+      buffer[6] = 0xf0;
+      buffer[7] = 0x7f;
+      assert.strictEqual(buffer.readDoubleBE(0), 3.0418e-319);
+      assert.strictEqual(buffer.readDoubleLE(0), Infinity);
+
+      buffer[7] = 0xff;
+      assert.strictEqual(buffer.readDoubleBE(0), 3.04814e-319);
+      assert.strictEqual(buffer.readDoubleLE(0), -Infinity);
+
+      ['readDoubleLE', 'readDoubleBE'].forEach((fn) => {
+        // Verify that default offset works fine.
+        buffer[fn](undefined);
+        buffer[fn]();
+
+        [-1, 1].forEach((offset) => {
+          assert.throws(() => buffer[fn](offset), RangeError);
+        });
+
+        assert.throws(() => Buffer.alloc(1)[fn](1), RangeError);
+      });
+    });
+
+    it('test-buffer-readfloat', () => {
+      // Test 32 bit float
+      const buffer = Buffer.alloc(4);
+
+      buffer[0] = 0;
+      buffer[1] = 0;
+      buffer[2] = 0x80;
+      buffer[3] = 0x3f;
+      assert.strictEqual(buffer.readFloatBE(0), 4.600602988224807e-41);
+      assert.strictEqual(buffer.readFloatLE(0), 1);
+
+      buffer[0] = 0;
+      buffer[1] = 0;
+      buffer[2] = 0;
+      buffer[3] = 0xc0;
+      assert.strictEqual(buffer.readFloatBE(0), 2.6904930515036488e-43);
+      assert.strictEqual(buffer.readFloatLE(0), -2);
+
+      buffer[0] = 0xff;
+      buffer[1] = 0xff;
+      buffer[2] = 0x7f;
+      buffer[3] = 0x7f;
+      assert.ok(Number.isNaN(buffer.readFloatBE(0)));
+      assert.strictEqual(buffer.readFloatLE(0), 3.4028234663852886e+38);
+
+      buffer[0] = 0xab;
+      buffer[1] = 0xaa;
+      buffer[2] = 0xaa;
+      buffer[3] = 0x3e;
+      assert.strictEqual(buffer.readFloatBE(0), -1.2126478207002966e-12);
+      assert.strictEqual(buffer.readFloatLE(0), 0.3333333432674408);
+
+      buffer[0] = 0;
+      buffer[1] = 0;
+      buffer[2] = 0;
+      buffer[3] = 0;
+      assert.strictEqual(buffer.readFloatBE(0), 0);
+      assert.strictEqual(buffer.readFloatLE(0), 0);
+      assert.ok(1 / buffer.readFloatLE(0) >= 0);
+
+      buffer[3] = 0x80;
+      assert.strictEqual(buffer.readFloatBE(0), 1.793662034335766e-43);
+      assert.strictEqual(buffer.readFloatLE(0), -0);
+      assert.ok(1 / buffer.readFloatLE(0) < 0);
+
+      buffer[0] = 0;
+      buffer[1] = 0;
+      buffer[2] = 0x80;
+      buffer[3] = 0x7f;
+      assert.strictEqual(buffer.readFloatBE(0), 4.609571298396486e-41);
+      assert.strictEqual(buffer.readFloatLE(0), Infinity);
+
+      buffer[0] = 0;
+      buffer[1] = 0;
+      buffer[2] = 0x80;
+      buffer[3] = 0xff;
+      assert.strictEqual(buffer.readFloatBE(0), 4.627507918739843e-41);
+      assert.strictEqual(buffer.readFloatLE(0), -Infinity);
+
+      ['readFloatLE', 'readFloatBE'].forEach((fn) => {
+        // Verify that default offset works fine.
+        buffer[fn](undefined);
+        buffer[fn]();
+
+        [-1, 1].forEach((offset) => {
+          assert.throws(() => buffer[fn](offset), RangeError);
+        });
+
+        assert.throws(() => Buffer.alloc(1)[fn](1), RangeError);
+      });
+    });
+
+    it('test-buffer-readint', () => {
+      // Test OOB
+      {
+        const buffer = Buffer.alloc(4);
+
+        ['Int8', 'Int16BE', 'Int16LE', 'Int32BE', 'Int32LE'].forEach((fn) => {
+          // Verify that default offset works fine.
+          buffer[`read${fn}`](undefined);
+          buffer[`read${fn}`]();
+
+          // XXX skip
+          // [-1, -4294967295]
+          [-1].forEach((offset) => {
+            assert.throws(() => buffer[`read${fn}`](offset), RangeError);
+          });
+        });
+      }
+
+      // Test 8 bit signed integers
+      {
+        const data = Buffer.from([0x23, 0xab, 0x7c, 0xef]);
+
+        assert.strictEqual(data.readInt8(0), 0x23);
+
+        data[0] = 0xff;
+        assert.strictEqual(data.readInt8(0), -1);
+
+        data[0] = 0x87;
+        assert.strictEqual(data.readInt8(0), -121);
+        assert.strictEqual(data.readInt8(1), -85);
+        assert.strictEqual(data.readInt8(2), 124);
+        assert.strictEqual(data.readInt8(3), -17);
+      }
+
+      // Test 16 bit integers
+      {
+        const buffer = Buffer.from([0x16, 0x79, 0x65, 0x6e, 0x69, 0x78]);
+
+        assert.strictEqual(buffer.readInt16BE(0), 0x1679);
+        assert.strictEqual(buffer.readInt16LE(0), 0x7916);
+
+        buffer[0] = 0xff;
+        buffer[1] = 0x80;
+        assert.strictEqual(buffer.readInt16BE(0), -128);
+        assert.strictEqual(buffer.readInt16LE(0), -32513);
+
+        buffer[0] = 0x77;
+        buffer[1] = 0x65;
+        assert.strictEqual(buffer.readInt16BE(0), 0x7765);
+        assert.strictEqual(buffer.readInt16BE(1), 0x6565);
+        assert.strictEqual(buffer.readInt16BE(2), 0x656e);
+        assert.strictEqual(buffer.readInt16BE(3), 0x6e69);
+        assert.strictEqual(buffer.readInt16BE(4), 0x6978);
+        assert.strictEqual(buffer.readInt16LE(0), 0x6577);
+        assert.strictEqual(buffer.readInt16LE(1), 0x6565);
+        assert.strictEqual(buffer.readInt16LE(2), 0x6e65);
+        assert.strictEqual(buffer.readInt16LE(3), 0x696e);
+        assert.strictEqual(buffer.readInt16LE(4), 0x7869);
+      }
+
+      // Test 32 bit integers
+      {
+        const buffer = Buffer.from([0x43, 0x53, 0x16, 0x79, 0x36, 0x17]);
+
+        assert.strictEqual(buffer.readInt32BE(0), 0x43531679);
+        assert.strictEqual(buffer.readInt32LE(0), 0x79165343);
+
+        buffer[0] = 0xff;
+        buffer[1] = 0xfe;
+        buffer[2] = 0xef;
+        buffer[3] = 0xfa;
+        assert.strictEqual(buffer.readInt32BE(0), -69638);
+        assert.strictEqual(buffer.readInt32LE(0), -84934913);
+
+        buffer[0] = 0x42;
+        buffer[1] = 0xc3;
+        buffer[2] = 0x95;
+        buffer[3] = 0xa9;
+        assert.strictEqual(buffer.readInt32BE(0), 0x42c395a9);
+        assert.strictEqual(buffer.readInt32BE(1), -1013601994);
+        assert.strictEqual(buffer.readInt32BE(2), -1784072681);
+        assert.strictEqual(buffer.readInt32LE(0), -1449802942);
+        assert.strictEqual(buffer.readInt32LE(1), 917083587);
+        assert.strictEqual(buffer.readInt32LE(2), 389458325);
+      }
+
+      // Test Int
+      {
+        const buffer = Buffer.from([0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08]);
+
+        assert.strictEqual(buffer.readIntLE(0, 1), 0x01);
+        assert.strictEqual(buffer.readIntBE(0, 1), 0x01);
+        assert.strictEqual(buffer.readIntLE(0, 3), 0x030201);
+        assert.strictEqual(buffer.readIntBE(0, 3), 0x010203);
+        assert.strictEqual(buffer.readIntLE(0, 5), 0x0504030201);
+        assert.strictEqual(buffer.readIntBE(0, 5), 0x0102030405);
+        assert.strictEqual(buffer.readIntLE(0, 6), 0x060504030201);
+        assert.strictEqual(buffer.readIntBE(0, 6), 0x010203040506);
+        assert.strictEqual(buffer.readIntLE(1, 6), 0x070605040302);
+        assert.strictEqual(buffer.readIntBE(1, 6), 0x020304050607);
+        assert.strictEqual(buffer.readIntLE(2, 6), 0x080706050403);
+        assert.strictEqual(buffer.readIntBE(2, 6), 0x030405060708);
+
+        // Check byteLength.
+        ['readIntBE', 'readIntLE'].forEach((fn) => {
+          [-1].forEach((byteLength) => {
+            assert.throws(() => buffer[fn](0, byteLength), RangeError);
+          });
+        });
+
+        // Test 1 to 6 bytes.
+        for (let i = 1; i <= 6; i++) {
+          ['readIntBE', 'readIntLE'].forEach((fn) => {
+            // XXX skip
+            // [-1, -4294967295]
+            [-1].forEach((offset) => {
+              assert.throws(() => buffer[fn](offset, i), RangeError);
+            });
+          });
+        }
+      }
+    });
+
+    it('test-buffer-readuint', () => {
+      // Test OOB
+      {
+        const buffer = Buffer.alloc(4);
+
+        ['UInt8', 'UInt16BE', 'UInt16LE', 'UInt32BE', 'UInt32LE'].forEach((fn) => {
+          // Verify that default offset works fine.
+          buffer[`read${fn}`](undefined);
+          buffer[`read${fn}`]();
+
+          // XXX skip
+          // [-1, -4294967295]
+          [-1].forEach((offset) => {
+            assert.throws(() => buffer[`read${fn}`](offset), RangeError);
+          });
+        });
+      }
+
+      // Test 8 bit unsigned integers
+      {
+        const data = Buffer.from([0xff, 0x2a, 0x2a, 0x2a]);
+        assert.strictEqual(data.readUInt8(0), 255);
+        assert.strictEqual(data.readUInt8(1), 42);
+        assert.strictEqual(data.readUInt8(2), 42);
+        assert.strictEqual(data.readUInt8(3), 42);
+      }
+
+      // Test 16 bit unsigned integers
+      {
+        const data = Buffer.from([0x00, 0x2a, 0x42, 0x3f]);
+        assert.strictEqual(data.readUInt16BE(0), 0x2a);
+        assert.strictEqual(data.readUInt16BE(1), 0x2a42);
+        assert.strictEqual(data.readUInt16BE(2), 0x423f);
+        assert.strictEqual(data.readUInt16LE(0), 0x2a00);
+        assert.strictEqual(data.readUInt16LE(1), 0x422a);
+        assert.strictEqual(data.readUInt16LE(2), 0x3f42);
+
+        data[0] = 0xfe;
+        data[1] = 0xfe;
+        assert.strictEqual(data.readUInt16BE(0), 0xfefe);
+        assert.strictEqual(data.readUInt16LE(0), 0xfefe);
+      }
+
+      // Test 32 bit unsigned integers
+      {
+        const data = Buffer.from([0x32, 0x65, 0x42, 0x56, 0x23, 0xff]);
+        assert.strictEqual(data.readUInt32BE(0), 0x32654256);
+        assert.strictEqual(data.readUInt32BE(1), 0x65425623);
+        assert.strictEqual(data.readUInt32BE(2), 0x425623ff);
+        assert.strictEqual(data.readUInt32LE(0), 0x56426532);
+        assert.strictEqual(data.readUInt32LE(1), 0x23564265);
+        assert.strictEqual(data.readUInt32LE(2), 0xff235642);
+      }
+
+      // Test UInt
+      {
+        const buffer = Buffer.from([0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08]);
+
+        assert.strictEqual(buffer.readUIntLE(0, 1), 0x01);
+        assert.strictEqual(buffer.readUIntBE(0, 1), 0x01);
+        assert.strictEqual(buffer.readUIntLE(0, 3), 0x030201);
+        assert.strictEqual(buffer.readUIntBE(0, 3), 0x010203);
+        assert.strictEqual(buffer.readUIntLE(0, 5), 0x0504030201);
+        assert.strictEqual(buffer.readUIntBE(0, 5), 0x0102030405);
+        assert.strictEqual(buffer.readUIntLE(0, 6), 0x060504030201);
+        assert.strictEqual(buffer.readUIntBE(0, 6), 0x010203040506);
+        assert.strictEqual(buffer.readUIntLE(1, 6), 0x070605040302);
+        assert.strictEqual(buffer.readUIntBE(1, 6), 0x020304050607);
+        assert.strictEqual(buffer.readUIntLE(2, 6), 0x080706050403);
+        assert.strictEqual(buffer.readUIntBE(2, 6), 0x030405060708);
+
+        // Check byteLength.
+        ['readUIntBE', 'readUIntLE'].forEach((fn) => {
+          [-1].forEach((byteLength) => {
+            assert.throws(() => buffer[fn](0, byteLength), RangeError);
+          });
+        });
+
+        // Test 1 to 6 bytes.
+        for (let i = 1; i <= 6; i++) {
+          ['readUIntBE', 'readUIntLE'].forEach((fn) => {
+            // XXX skip
+            // [-1, -4294967295]
+            [-1].forEach((offset) => {
+              assert.throws(() => buffer[fn](offset, i), RangeError);
+            });
+          });
+        }
+      }
+    });
+
     it('test-buffer-safe-unsafe', () => {
       const safe = Buffer.alloc(10);
 
@@ -4638,6 +5127,619 @@ describe('Buffer', () => {
 
         assert.ok(!Buffer.isEncoding(encoding));
         assert.throws(() => Buffer.alloc(9).write('foo', encoding), error);
+      }
+    });
+
+    it('test-buffer-write2', () => {
+      [-1, 10].forEach((offset) => {
+        assert.throws(
+          () => Buffer.alloc(9).write('foo', offset),
+          RangeError
+        );
+      });
+
+      const resultMap = new Map([
+        ['utf8', Buffer.from([102, 111, 111, 0, 0, 0, 0, 0, 0])],
+        ['ucs2', Buffer.from([102, 0, 111, 0, 111, 0, 0, 0, 0])],
+        ['ascii', Buffer.from([102, 111, 111, 0, 0, 0, 0, 0, 0])],
+        ['latin1', Buffer.from([102, 111, 111, 0, 0, 0, 0, 0, 0])],
+        ['binary', Buffer.from([102, 111, 111, 0, 0, 0, 0, 0, 0])],
+        ['utf16le', Buffer.from([102, 0, 111, 0, 111, 0, 0, 0, 0])],
+        ['base64', Buffer.from([102, 111, 111, 0, 0, 0, 0, 0, 0])],
+        // XXX skip
+        // ['base64url', Buffer.from([102, 111, 111, 0, 0, 0, 0, 0, 0])],
+        ['hex', Buffer.from([102, 111, 111, 0, 0, 0, 0, 0, 0])]
+      ]);
+
+      // utf8, ucs2, ascii, latin1, utf16le
+      const encodings = ['utf8', 'utf-8', 'ucs2', 'ucs-2', 'ascii', 'latin1',
+                         'binary', 'utf16le', 'utf-16le'];
+
+      encodings
+        .reduce((es, e) => es.concat(e, e.toUpperCase()), [])
+        .forEach((encoding) => {
+          const buf = Buffer.alloc(9);
+          const len = Buffer.byteLength('foo', encoding);
+          assert.strictEqual(buf.write('foo', 0, len, encoding), len);
+
+          if (encoding.includes('-'))
+            encoding = encoding.replace('-', '');
+
+          assert.deepStrictEqual(buf, resultMap.get(encoding.toLowerCase()));
+        });
+
+      // base64
+      // XXX skip
+      // ['base64url', 'BASE64URL']
+      ['base64', 'BASE64'].forEach((encoding) => {
+        const buf = Buffer.alloc(9);
+        const len = Buffer.byteLength('Zm9v', encoding);
+
+        assert.strictEqual(buf.write('Zm9v', 0, len, encoding), len);
+        assert.deepStrictEqual(buf, resultMap.get(encoding.toLowerCase()));
+      });
+
+      // hex
+      ['hex', 'HEX'].forEach((encoding) => {
+        const buf = Buffer.alloc(9);
+        const len = Buffer.byteLength('666f6f', encoding);
+
+        assert.strictEqual(buf.write('666f6f', 0, len, encoding), len);
+        assert.deepStrictEqual(buf, resultMap.get(encoding.toLowerCase()));
+      });
+
+      // Invalid encodings
+      for (let i = 1; i < 10; i++) {
+        const encoding = String(i).repeat(i);
+        const error = common.expectsError({
+          code: 'ERR_UNKNOWN_ENCODING',
+          name: 'TypeError',
+          message: `Unknown encoding: ${encoding}`
+        });
+
+        assert.ok(!Buffer.isEncoding(encoding));
+        assert.throws(() => Buffer.alloc(9).write('foo', encoding), error);
+      }
+
+      // UCS-2 overflow CVE-2018-12115
+      for (let i = 1; i < 4; i++) {
+        // Allocate two Buffers sequentially off the pool. Run more than once in case
+        // we hit the end of the pool and don't get sequential allocations
+        const x = Buffer.allocUnsafe(4).fill(0);
+        const y = Buffer.allocUnsafe(4).fill(1);
+        // Should not write anything, pos 3 doesn't have enough room for a 16-bit char
+        assert.strictEqual(x.write('ыыыыыы', 3, 'ucs2'), 0);
+        // CVE-2018-12115 experienced via buffer overrun to next block in the pool
+        assert.strictEqual(Buffer.compare(y, Buffer.alloc(4, 1)), 0);
+      }
+
+      // Should not write any data when there is no space for 16-bit chars
+      const z = Buffer.alloc(4, 0);
+      assert.strictEqual(z.write('\u0001', 3, 'ucs2'), 0);
+      assert.strictEqual(Buffer.compare(z, Buffer.alloc(4, 0)), 0);
+      // Make sure longer strings are written up to the buffer end.
+      assert.strictEqual(z.write('abcd', 2), 2);
+      assert.deepStrictEqual([...z], [0, 0, 0x61, 0x62]);
+
+      // Large overrun could corrupt the process
+      assert.strictEqual(Buffer.alloc(4)
+        .write('ыыыыыы'.repeat(100), 3, 'utf16le'), 0);
+
+      {
+        // .write() does not affect the byte after the written-to slice of the Buffer.
+        // Refs: https://github.com/nodejs/node/issues/26422
+        const buf = Buffer.alloc(8);
+        assert.strictEqual(buf.write('ыы', 1, 'utf16le'), 4);
+        assert.deepStrictEqual([...buf], [0, 0x4b, 0x04, 0x4b, 0x04, 0, 0, 0]);
+      }
+    });
+
+    it('test-buffer-writedouble', () => {
+      const buffer = Buffer.allocUnsafe(16);
+
+      buffer.writeDoubleBE(2.225073858507201e-308, 0);
+      buffer.writeDoubleLE(2.225073858507201e-308, 8);
+      assert.ok(buffer.equals(new Uint8Array([
+        0x00, 0x0f, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0x0f, 0x00
+      ])));
+
+      buffer.writeDoubleBE(1.0000000000000004, 0);
+      buffer.writeDoubleLE(1.0000000000000004, 8);
+      assert.ok(buffer.equals(new Uint8Array([
+        0x3f, 0xf0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02,
+        0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0xf0, 0x3f
+      ])));
+
+      buffer.writeDoubleBE(-2, 0);
+      buffer.writeDoubleLE(-2, 8);
+      assert.ok(buffer.equals(new Uint8Array([
+        0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xc0
+      ])));
+
+      buffer.writeDoubleBE(1.7976931348623157e+308, 0);
+      buffer.writeDoubleLE(1.7976931348623157e+308, 8);
+      assert.ok(buffer.equals(new Uint8Array([
+        0x7f, 0xef, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
+        0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xef, 0x7f
+      ])));
+
+      buffer.writeDoubleBE(0 * -1, 0);
+      buffer.writeDoubleLE(0 * -1, 8);
+      assert.ok(buffer.equals(new Uint8Array([
+        0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80
+      ])));
+
+      buffer.writeDoubleBE(Infinity, 0);
+      buffer.writeDoubleLE(Infinity, 8);
+
+      assert.ok(buffer.equals(new Uint8Array([
+        0x7F, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF0, 0x7F
+      ])));
+
+      assert.strictEqual(buffer.readDoubleBE(0), Infinity);
+      assert.strictEqual(buffer.readDoubleLE(8), Infinity);
+
+      buffer.writeDoubleBE(-Infinity, 0);
+      buffer.writeDoubleLE(-Infinity, 8);
+
+      assert.ok(buffer.equals(new Uint8Array([
+        0xFF, 0xF0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+        0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF0, 0xFF
+      ])));
+
+      assert.strictEqual(buffer.readDoubleBE(0), -Infinity);
+      assert.strictEqual(buffer.readDoubleLE(8), -Infinity);
+
+      buffer.writeDoubleBE(NaN, 0);
+      buffer.writeDoubleLE(NaN, 8);
+
+      // JS only knows a single NaN but there exist two platform specific
+      // implementations. Therefore, allow both quiet and signalling NaNs.
+      if (buffer[1] === 0xF7) {
+        assert.ok(buffer.equals(new Uint8Array([
+          0x7F, 0xF7, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+          0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xF7, 0x7F
+        ])));
+      } else {
+        // FIXME
+        if (buffer[1] === 0xF8) {
+          assert.ok(buffer.equals(new Uint8Array([
+            0x7F, 0xF8, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+            0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF8, 0x7F
+          ])));
+        } else {
+          assert.ok(buffer.equals(new Uint8Array([
+            0x7f, 0xf0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01,
+            0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0xf0, 0x7f
+          ])));
+        }
+      }
+
+      assert.ok(Number.isNaN(buffer.readDoubleBE(0)));
+      assert.ok(Number.isNaN(buffer.readDoubleLE(8)));
+
+      // OOB in writeDouble{LE,BE} should throw.
+      {
+        const small = Buffer.allocUnsafe(1);
+
+        ['writeDoubleLE', 'writeDoubleBE'].forEach((fn) => {
+          // Verify that default offset works fine.
+          buffer[fn](23, undefined);
+          buffer[fn](23);
+
+          assert.throws(() => small[fn](11.11, 0), RangeError);
+
+          [-1, 9].forEach((offset) => {
+            assert.throws(() => buffer[fn](23, offset), RangeError);
+          });
+        });
+      }
+    });
+
+    it('test-buffer-writefloat', () => {
+      const buffer = Buffer.allocUnsafe(8);
+
+      buffer.writeFloatBE(1, 0);
+      buffer.writeFloatLE(1, 4);
+      assert.ok(buffer.equals(
+        new Uint8Array([0x3f, 0x80, 0x00, 0x00, 0x00, 0x00, 0x80, 0x3f])));
+
+      buffer.writeFloatBE(1 / 3, 0);
+      buffer.writeFloatLE(1 / 3, 4);
+      assert.ok(buffer.equals(
+        new Uint8Array([0x3e, 0xaa, 0xaa, 0xab, 0xab, 0xaa, 0xaa, 0x3e])));
+
+      buffer.writeFloatBE(3.4028234663852886e+38, 0);
+      buffer.writeFloatLE(3.4028234663852886e+38, 4);
+      assert.ok(buffer.equals(
+        new Uint8Array([0x7f, 0x7f, 0xff, 0xff, 0xff, 0xff, 0x7f, 0x7f])));
+
+      buffer.writeFloatLE(1.1754943508222875e-38, 0);
+      buffer.writeFloatBE(1.1754943508222875e-38, 4);
+      assert.ok(buffer.equals(
+        new Uint8Array([0x00, 0x00, 0x80, 0x00, 0x00, 0x80, 0x00, 0x00])));
+
+      buffer.writeFloatBE(0 * -1, 0);
+      buffer.writeFloatLE(0 * -1, 4);
+      assert.ok(buffer.equals(
+        new Uint8Array([0x80, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x80])));
+
+      buffer.writeFloatBE(Infinity, 0);
+      buffer.writeFloatLE(Infinity, 4);
+      assert.ok(buffer.equals(
+        new Uint8Array([0x7F, 0x80, 0x00, 0x00, 0x00, 0x00, 0x80, 0x7F])));
+
+      assert.strictEqual(buffer.readFloatBE(0), Infinity);
+      assert.strictEqual(buffer.readFloatLE(4), Infinity);
+
+      buffer.writeFloatBE(-Infinity, 0);
+      buffer.writeFloatLE(-Infinity, 4);
+      assert.ok(buffer.equals(
+        new Uint8Array([0xFF, 0x80, 0x00, 0x00, 0x00, 0x00, 0x80, 0xFF])));
+
+      assert.strictEqual(buffer.readFloatBE(0), -Infinity);
+      assert.strictEqual(buffer.readFloatLE(4), -Infinity);
+
+      buffer.writeFloatBE(NaN, 0);
+      buffer.writeFloatLE(NaN, 4);
+
+      // JS only knows a single NaN but there exist two platform specific
+      // implementations. Therefore, allow both quiet and signalling NaNs.
+      if (buffer[1] === 0xBF) {
+        assert.ok(
+          buffer.equals(new Uint8Array(
+            [0x7F, 0xBF, 0xFF, 0xFF, 0xFF, 0xFF, 0xBF, 0x7F])));
+      } else {
+        // FIXME
+        if (buffer[1] === 0xC0) {
+          assert.ok(
+            buffer.equals(new Uint8Array(
+              [0x7F, 0xC0, 0x00, 0x00, 0x00, 0x00, 0xC0, 0x7F])));
+        } else {
+          assert.ok(
+            buffer.equals(new Uint8Array(
+              [0x7f, 0x80, 0x00, 0x01, 0x01, 0x00, 0x80, 0x7f])));
+        }
+      }
+
+      assert.ok(Number.isNaN(buffer.readFloatBE(0)));
+      assert.ok(Number.isNaN(buffer.readFloatLE(4)));
+
+      // OOB in writeFloat{LE,BE} should throw.
+      {
+        const small = Buffer.allocUnsafe(1);
+
+        ['writeFloatLE', 'writeFloatBE'].forEach((fn) => {
+          // Verify that default offset works fine.
+          buffer[fn](23, undefined);
+          buffer[fn](23);
+
+          assert.throws(() => small[fn](11.11, 0), RangeError);
+
+          [-1, 5].forEach((offset) => {
+            assert.throws(() => buffer[fn](23, offset), RangeError);
+          });
+        });
+      }
+    });
+
+    it('test-buffer-writeint', () => {
+      // Test 8 bit
+      {
+        const buffer = Buffer.alloc(2);
+
+        buffer.writeInt8(0x23, 0);
+        buffer.writeInt8(-5, 1);
+        assert.ok(buffer.equals(new Uint8Array([0x23, 0xfb])));
+
+        /* Make sure we handle min/max correctly */
+        buffer.writeInt8(0x7f, 0);
+        buffer.writeInt8(-0x80, 1);
+        assert.ok(buffer.equals(new Uint8Array([0x7f, 0x80])));
+
+        assert.throws(() => {
+          buffer.writeInt8(0x7f + 1, 0);
+        }, RangeError);
+        assert.throws(() => {
+          buffer.writeInt8(-0x80 - 1, 0);
+        }, RangeError);
+
+        // Verify that default offset works fine.
+        buffer.writeInt8(23, undefined);
+        buffer.writeInt8(23);
+
+        [-1].forEach((off) => {
+          assert.throws(() => buffer.writeInt8(23, off), RangeError);
+        });
+      }
+
+      // Test 16 bit
+      {
+        const buffer = Buffer.alloc(4);
+
+        buffer.writeInt16BE(0x0023, 0);
+        buffer.writeInt16LE(0x0023, 2);
+        assert.ok(buffer.equals(new Uint8Array([0x00, 0x23, 0x23, 0x00])));
+
+        buffer.writeInt16BE(-5, 0);
+        buffer.writeInt16LE(-5, 2);
+        assert.ok(buffer.equals(new Uint8Array([0xff, 0xfb, 0xfb, 0xff])));
+
+        buffer.writeInt16BE(-1679, 0);
+        buffer.writeInt16LE(-1679, 2);
+        assert.ok(buffer.equals(new Uint8Array([0xf9, 0x71, 0x71, 0xf9])));
+
+        /* Make sure we handle min/max correctly */
+        buffer.writeInt16BE(0x7fff, 0);
+        buffer.writeInt16BE(-0x8000, 2);
+        assert.ok(buffer.equals(new Uint8Array([0x7f, 0xff, 0x80, 0x00])));
+
+        buffer.writeInt16LE(0x7fff, 0);
+        buffer.writeInt16LE(-0x8000, 2);
+        assert.ok(buffer.equals(new Uint8Array([0xff, 0x7f, 0x00, 0x80])));
+
+        ['writeInt16BE', 'writeInt16LE'].forEach((fn) => {
+          // Verify that default offset works fine.
+          buffer[fn](23, undefined);
+          buffer[fn](23);
+
+          assert.throws(() => buffer[fn](0x7fff + 1, 0), RangeError);
+          assert.throws(() => buffer[fn](-0x8000 - 1, 0), RangeError);
+
+          [-1].forEach((off) => {
+            assert.throws(() => buffer[fn](23, off), RangeError);
+          });
+        });
+      }
+
+      // Test 32 bit
+      {
+        const buffer = Buffer.alloc(8);
+
+        buffer.writeInt32BE(0x23, 0);
+        buffer.writeInt32LE(0x23, 4);
+        assert.ok(buffer.equals(new Uint8Array([
+          0x00, 0x00, 0x00, 0x23, 0x23, 0x00, 0x00, 0x00
+        ])));
+
+        buffer.writeInt32BE(-5, 0);
+        buffer.writeInt32LE(-5, 4);
+        assert.ok(buffer.equals(new Uint8Array([
+          0xff, 0xff, 0xff, 0xfb, 0xfb, 0xff, 0xff, 0xff
+        ])));
+
+        buffer.writeInt32BE(-805306713, 0);
+        buffer.writeInt32LE(-805306713, 4);
+        assert.ok(buffer.equals(new Uint8Array([
+          0xcf, 0xff, 0xfe, 0xa7, 0xa7, 0xfe, 0xff, 0xcf
+        ])));
+
+        /* Make sure we handle min/max correctly */
+        buffer.writeInt32BE(0x7fffffff, 0);
+        buffer.writeInt32BE(-0x80000000, 4);
+        assert.ok(buffer.equals(new Uint8Array([
+          0x7f, 0xff, 0xff, 0xff, 0x80, 0x00, 0x00, 0x00
+        ])));
+
+        buffer.writeInt32LE(0x7fffffff, 0);
+        buffer.writeInt32LE(-0x80000000, 4);
+        assert.ok(buffer.equals(new Uint8Array([
+          0xff, 0xff, 0xff, 0x7f, 0x00, 0x00, 0x00, 0x80
+        ])));
+
+        ['writeInt32BE', 'writeInt32LE'].forEach((fn) => {
+          // Verify that default offset works fine.
+          buffer[fn](23, undefined);
+          buffer[fn](23);
+
+          assert.throws(() => buffer[fn](0x7fffffff + 1, 0), RangeError);
+          assert.throws(() => buffer[fn](-0x80000000 - 1, 0), RangeError);
+
+          [-1].forEach((off) => {
+            assert.throws(() => buffer[fn](23, off), RangeError);
+          });
+        });
+      }
+
+      // Test 48 bit
+      {
+        const value = 0x1234567890ab;
+        const buffer = Buffer.allocUnsafe(6);
+        buffer.writeIntBE(value, 0, 6);
+        assert.ok(buffer.equals(new Uint8Array([
+          0x12, 0x34, 0x56, 0x78, 0x90, 0xab
+        ])));
+
+        buffer.writeIntLE(value, 0, 6);
+        assert.ok(buffer.equals(new Uint8Array([
+          0xab, 0x90, 0x78, 0x56, 0x34, 0x12
+        ])));
+      }
+
+      // Test Int
+      {
+        const data = Buffer.alloc(8);
+
+        // Check byteLength.
+        ['writeIntBE', 'writeIntLE'].forEach((fn) => {
+          [-1].forEach((byteLength) => {
+            assert.throws(() => data[fn](23, 0, byteLength), RangeError);
+          });
+        });
+
+        // Test 1 to 6 bytes.
+        for (let i = 1; i <= 6; i++) {
+          ['writeIntBE', 'writeIntLE'].forEach((fn) => {
+            const min = -(2 ** (i * 8 - 1));
+            const max = 2 ** (i * 8 - 1) - 1;
+
+            [min - 1, max + 1].forEach((val) => {
+              assert.throws(() => data[fn](val, 0, i), RangeError);
+            });
+
+            // XXX skip
+            // [-1, -4294967295]
+            [-1].forEach((offset) => {
+              assert.throws(() => data[fn](min, offset, i), RangeError);
+            });
+          });
+        }
+      }
+    });
+
+    it('test-buffer-writeuint', () => {
+      // We need to check the following things:
+      //  - We are correctly resolving big endian (doesn't mean anything for 8 bit)
+      //  - Correctly resolving little endian (doesn't mean anything for 8 bit)
+      //  - Correctly using the offsets
+      //  - Correctly interpreting values that are beyond the signed range as unsigned
+
+      { // OOB
+        const data = Buffer.alloc(8);
+        ['UInt8', 'UInt16BE', 'UInt16LE', 'UInt32BE', 'UInt32LE'].forEach((fn) => {
+          // Verify that default offset works fine.
+          data[`write${fn}`](23, undefined);
+          data[`write${fn}`](23);
+
+          [-1].forEach((o) => {
+            assert.throws(() => data[`write${fn}`](23, o), RangeError);
+          });
+        });
+      }
+
+      { // Test 8 bit
+        const data = Buffer.alloc(4);
+
+        data.writeUInt8(23, 0);
+        data.writeUInt8(23, 1);
+        data.writeUInt8(23, 2);
+        data.writeUInt8(23, 3);
+        assert.ok(data.equals(new Uint8Array([23, 23, 23, 23])));
+
+        data.writeUInt8(23, 0);
+        data.writeUInt8(23, 1);
+        data.writeUInt8(23, 2);
+        data.writeUInt8(23, 3);
+        assert.ok(data.equals(new Uint8Array([23, 23, 23, 23])));
+
+        data.writeUInt8(255, 0);
+        assert.strictEqual(data[0], 255);
+
+        data.writeUInt8(255, 0);
+        assert.strictEqual(data[0], 255);
+      }
+
+      // Test 16 bit
+      {
+        let value = 0x2343;
+        const data = Buffer.alloc(4);
+
+        data.writeUInt16BE(value, 0);
+        assert.ok(data.equals(new Uint8Array([0x23, 0x43, 0, 0])));
+
+        data.writeUInt16BE(value, 1);
+        assert.ok(data.equals(new Uint8Array([0x23, 0x23, 0x43, 0])));
+
+        data.writeUInt16BE(value, 2);
+        assert.ok(data.equals(new Uint8Array([0x23, 0x23, 0x23, 0x43])));
+
+        data.writeUInt16LE(value, 0);
+        assert.ok(data.equals(new Uint8Array([0x43, 0x23, 0x23, 0x43])));
+
+        data.writeUInt16LE(value, 1);
+        assert.ok(data.equals(new Uint8Array([0x43, 0x43, 0x23, 0x43])));
+
+        data.writeUInt16LE(value, 2);
+        assert.ok(data.equals(new Uint8Array([0x43, 0x43, 0x43, 0x23])));
+
+        value = 0xff80;
+        data.writeUInt16LE(value, 0);
+        assert.ok(data.equals(new Uint8Array([0x80, 0xff, 0x43, 0x23])));
+
+        data.writeUInt16BE(value, 0);
+        assert.ok(data.equals(new Uint8Array([0xff, 0x80, 0x43, 0x23])));
+
+        value = 0xfffff;
+        ['writeUInt16BE', 'writeUInt16LE'].forEach((fn) => {
+          assert.throws(() => data[fn](value, 0), RangeError);
+        });
+      }
+
+      // Test 32 bit
+      {
+        const data = Buffer.alloc(6);
+        const value = 0xe7f90a6d;
+
+        data.writeUInt32BE(value, 0);
+        assert.ok(data.equals(new Uint8Array([0xe7, 0xf9, 0x0a, 0x6d, 0, 0])));
+
+        data.writeUInt32BE(value, 1);
+        assert.ok(data.equals(new Uint8Array([0xe7, 0xe7, 0xf9, 0x0a, 0x6d, 0])));
+
+        data.writeUInt32BE(value, 2);
+        assert.ok(data.equals(new Uint8Array([0xe7, 0xe7, 0xe7, 0xf9, 0x0a, 0x6d])));
+
+        data.writeUInt32LE(value, 0);
+        assert.ok(data.equals(new Uint8Array([0x6d, 0x0a, 0xf9, 0xe7, 0x0a, 0x6d])));
+
+        data.writeUInt32LE(value, 1);
+        assert.ok(data.equals(new Uint8Array([0x6d, 0x6d, 0x0a, 0xf9, 0xe7, 0x6d])));
+
+        data.writeUInt32LE(value, 2);
+        assert.ok(data.equals(new Uint8Array([0x6d, 0x6d, 0x6d, 0x0a, 0xf9, 0xe7])));
+      }
+
+      // Test 48 bit
+      {
+        const value = 0x1234567890ab;
+        const data = Buffer.allocUnsafe(6);
+        data.writeUIntBE(value, 0, 6);
+        assert.ok(data.equals(new Uint8Array([0x12, 0x34, 0x56, 0x78, 0x90, 0xab])));
+
+        data.writeUIntLE(value, 0, 6);
+        assert.ok(data.equals(new Uint8Array([0xab, 0x90, 0x78, 0x56, 0x34, 0x12])));
+      }
+
+      // Test UInt
+      {
+        const data = Buffer.alloc(8);
+        let val = 0x100;
+
+        // Check byteLength.
+        ['writeUIntBE', 'writeUIntLE'].forEach((fn) => {
+          [-1].forEach((byteLength) => {
+            assert.throws(() => data[fn](23, 0, byteLength), RangeError);
+          });
+        });
+
+        // Test 1 to 6 bytes.
+        for (let i = 1; i <= 6; i++) {
+          ['writeUIntBE', 'writeUIntLE'].forEach((fn) => {
+            assert.throws(() => data[fn](val, 0, i), RangeError);
+
+            // XXX skip
+            // [-1, -4294967295]
+            [-1].forEach((offset) => {
+              assert.throws(() => data[fn](val - 1, offset, i), RangeError);
+            });
+          });
+
+          val *= 0x100;
+        }
+      }
+
+      for (const fn of [
+        'UInt8', 'UInt16LE', 'UInt16BE', 'UInt32LE', 'UInt32BE', 'UIntLE', 'UIntBE',
+        'BigUInt64LE', 'BigUInt64BE'
+      ]) {
+        const p = Buffer.prototype;
+        const lowerFn = fn.replace(/UInt/, 'Uint');
+        assert.strictEqual(p[`write${fn}`], p[`write${lowerFn}`]);
+        assert.strictEqual(p[`read${fn}`], p[`read${lowerFn}`]);
       }
     });
 

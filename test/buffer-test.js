@@ -20,6 +20,169 @@ function isBuffer(obj) {
 }
 
 describe('Buffer', () => {
+  describe('typing', () => {
+    // Get a Uint8Array and Buffer constructor from another context.
+    const code = `
+      'use strict';
+      function Buffer(...args) {
+        const buf = new Uint8Array(...args);
+        Object.setPrototypeOf(buf, Buffer.prototype);
+        return buf;
+      }
+      Object.setPrototypeOf(Buffer.prototype, Uint8Array.prototype);
+      Object.setPrototypeOf(Buffer, Uint8Array);
+      Buffer.prototype._isBuffer = true;
+      exports.Uint8Array = Uint8Array;
+      exports.Buffer = Buffer;
+    `;
+
+    const context = {};
+
+    // Should work in browserify.
+    vm.runInNewContext(code, { exports: context });
+
+    const arrays = [context.Uint8Array, context.Buffer];
+
+    // Extracted from the index.js code for testing purposes.
+    function isInstance(obj, type) {
+      return (obj instanceof type) ||
+             (obj != null &&
+              obj.constructor != null &&
+              obj.constructor.name != null &&
+              obj.constructor.name === type.name) ||
+             (type === Uint8Array && Buffer.isBuffer(obj));
+    }
+
+    it('Uint8Arrays and Buffers from other contexts', () => {
+      // Our buffer is considered a view.
+      assert(ArrayBuffer.isView(Buffer.alloc(0)));
+
+      for (const ForeignArray of arrays) {
+        const buf = new ForeignArray(1);
+
+        buf[0] = 1;
+
+        // Prove that ArrayBuffer.isView and isInstance
+        // return true for objects from other contexts.
+        assert(!(buf instanceof Object));
+        assert(!(buf instanceof Uint8Array));
+        assert(!(buf instanceof Buffer));
+        assert(ArrayBuffer.isView(buf));
+
+        // Now returns true even for Buffers from other contexts:
+        assert(isInstance(buf, Uint8Array));
+
+        if (ForeignArray === context.Uint8Array)
+          assert(!Buffer.isBuffer(buf));
+        else
+          assert(Buffer.isBuffer(buf));
+
+        // They even behave the same!
+        const copy = new Uint8Array(buf);
+
+        assert(copy instanceof Object);
+        assert(copy instanceof Uint8Array);
+        assert(ArrayBuffer.isView(copy));
+        assert.strictEqual(copy[0], 1);
+      }
+    });
+
+    it('should instantiate from foreign arrays', () => {
+      for (const ForeignArray of arrays) {
+        const arr = new ForeignArray(2);
+
+        arr[0] = 1;
+        arr[1] = 2;
+
+        const buf = Buffer.from(arr);
+
+        assert.strictEqual(buf.toString('hex'), '0102');
+      }
+    });
+
+    it('should do comparisons with foreign arrays', () => {
+      const a = Buffer.from([1, 2, 3]);
+      const b = new context.Uint8Array(a);
+      const c = new context.Buffer(a);
+
+      assert.strictEqual(Buffer.byteLength(a), 3);
+      assert.strictEqual(Buffer.byteLength(b), 3);
+      assert.strictEqual(Buffer.byteLength(c), 3);
+      assert.strictEqual(b[0], 1);
+      assert.strictEqual(c[0], 1);
+
+      assert(a.equals(b));
+      assert(a.equals(c));
+      assert(a.compare(b) === 0);
+      assert(a.compare(c) === 0);
+      assert(Buffer.compare(a, b) === 0);
+      assert(Buffer.compare(a, c) === 0);
+      assert(Buffer.compare(b, c) === 0);
+      assert(Buffer.compare(c, b) === 0);
+
+      a[0] = 0;
+
+      assert(!a.equals(b));
+      assert(!a.equals(c));
+      assert(a.compare(b) < 0);
+      assert(a.compare(c) < 0);
+      assert(Buffer.compare(a, b) < 0);
+      assert(Buffer.compare(a, c) < 0);
+
+      b[0] = 0;
+
+      assert(Buffer.compare(b, c) < 0);
+      assert(Buffer.compare(c, b) > 0);
+    });
+
+    it('should fill with foreign arrays', () => {
+      for (const ForeignArray of arrays) {
+        const buf = Buffer.alloc(4);
+        const arr = new ForeignArray(2);
+
+        arr[0] = 1;
+        arr[1] = 2;
+
+        buf.fill(arr);
+
+        assert.strictEqual(buf.toString('hex'), '01020102');
+      }
+    });
+
+    it('should do concatenation with foreign arrays', () => {
+      for (const ForeignArray of arrays) {
+        const a = new ForeignArray(2);
+
+        a[0] = 1;
+        a[1] = 2;
+
+        const b = new ForeignArray(a);
+
+        {
+          const buf = Buffer.concat([a, b]);
+          assert.strictEqual(buf.toString('hex'), '01020102');
+        }
+
+        {
+          const buf = Buffer.concat([a, b], 3);
+          assert.strictEqual(buf.toString('hex'), '010201');
+        }
+      }
+    });
+
+    it('should copy on to foreign arrays', () => {
+      for (const ForeignArray of arrays) {
+        const a = Buffer.from([1, 2]);
+        const b = new ForeignArray(2);
+
+        a.copy(b);
+
+        assert.strictEqual(b[0], 1);
+        assert.strictEqual(b[1], 2);
+      }
+    });
+  });
+
   describe('base64', () => {
     it('base64: ignore whitespace', () => {
       const text = '\n   YW9ldQ==  ';

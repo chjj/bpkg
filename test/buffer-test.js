@@ -229,6 +229,49 @@ describe('Buffer', () => {
         highByte
       );
     });
+
+    it('base64: rfc test vectors', () => {
+      // https://tools.ietf.org/html/rfc4648#section-10
+      const vectors = [
+        ['', ''],
+        ['66', 'Zg=='],
+        ['666f', 'Zm8='],
+        ['666f6f', 'Zm9v'],
+        ['666f6f62', 'Zm9vYg=='],
+        ['666f6f6261', 'Zm9vYmE='],
+        ['666f6f626172', 'Zm9vYmFy'],
+        ['53e9363b2962fcaf', 'U+k2Oyli/K8=']
+      ];
+
+      for (const [base16, base64] of vectors) {
+        const buf16 = Buffer.from(base16, 'hex');
+        const buf64 = Buffer.from(base64, 'base64');
+
+        assert.strictEqual(buf16.toString('base64'), base64);
+        assert.strictEqual(buf64.toString('hex'), base16);
+      }
+    });
+
+    it('base64url: rfc test vectors', () => {
+      const vectors = [
+        ['', ''],
+        ['66', 'Zg'],
+        ['666f', 'Zm8'],
+        ['666f6f', 'Zm9v'],
+        ['666f6f62', 'Zm9vYg'],
+        ['666f6f6261', 'Zm9vYmE'],
+        ['666f6f626172', 'Zm9vYmFy'],
+        ['53e9363b2962fcaf', 'U-k2Oyli_K8']
+      ];
+
+      for (const [base16, base64] of vectors) {
+        const buf16 = Buffer.from(base16, 'hex');
+        const buf64 = Buffer.from(base64, 'base64url');
+
+        assert.strictEqual(buf16.toString('base64url'), base64);
+        assert.strictEqual(buf64.toString('hex'), base16);
+      }
+    });
   });
 
   describe('basic', () => {
@@ -5309,8 +5352,7 @@ describe('Buffer', () => {
         ['binary', Buffer.from([102, 111, 111, 0, 0, 0, 0, 0, 0])],
         ['utf16le', Buffer.from([102, 0, 111, 0, 111, 0, 0, 0, 0])],
         ['base64', Buffer.from([102, 111, 111, 0, 0, 0, 0, 0, 0])],
-        // XXX skip
-        // ['base64url', Buffer.from([102, 111, 111, 0, 0, 0, 0, 0, 0])],
+        ['base64url', Buffer.from([102, 111, 111, 0, 0, 0, 0, 0, 0])],
         ['hex', Buffer.from([102, 111, 111, 0, 0, 0, 0, 0, 0])]
       ]);
 
@@ -5332,9 +5374,7 @@ describe('Buffer', () => {
         });
 
       // base64
-      // XXX skip
-      // ['base64url', 'BASE64URL']
-      ['base64', 'BASE64'].forEach((encoding) => {
+      ['base64', 'BASE64', 'base64url', 'BASE64URL'].forEach((encoding) => {
         const buf = Buffer.alloc(9);
         const len = Buffer.byteLength('Zm9v', encoding);
 

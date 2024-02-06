@@ -19,7 +19,7 @@ function isBuffer(obj) {
          obj.constructor.isBuffer(obj);
 }
 
-describe('Buffer', () => {
+describe('Buffer', function() {
   describe('typing', () => {
     // Get a Uint8Array and Buffer constructor from another context.
     const code = `
@@ -2584,38 +2584,41 @@ describe('Buffer', () => {
     it('test-buffer-bigint64', () => {
       const buf = Buffer.allocUnsafe(8);
 
+      if (typeof BigInt !== 'function')
+        this.skip();
+
       ['LE', 'BE'].forEach((endianness) => {
         // Should allow simple BigInts to be written and read
-        let val = 123456789n;
+        let val = BigInt(123456789);
         buf['writeBigInt64' + endianness](val, 0);
         let rtn = buf['readBigInt64' + endianness](0);
         assert.strictEqual(val, rtn);
 
         // Should allow INT64_MAX to be written and read
-        val = 0x7fffffffffffffffn;
+        val = BigInt('0x7fffffffffffffff');
         buf['writeBigInt64' + endianness](val, 0);
         rtn = buf['readBigInt64' + endianness](0);
         assert.strictEqual(val, rtn);
 
         // Should read and write a negative signed 64-bit integer
-        val = -123456789n;
+        val = -BigInt(123456789);
         buf['writeBigInt64' + endianness](val, 0);
         assert.strictEqual(val, buf['readBigInt64' + endianness](0));
 
         // Should read and write an unsigned 64-bit integer
-        val = 123456789n;
+        val = BigInt(123456789);
         buf['writeBigUInt64' + endianness](val, 0);
         assert.strictEqual(val, buf['readBigUInt64' + endianness](0));
 
         // Should throw a RangeError upon INT64_MAX+1 being written
         assert.throws(() => {
-          const val = 0x8000000000000000n;
+          const val = BigInt('0x8000000000000000');
           buf['writeBigInt64' + endianness](val, 0);
         }, RangeError);
 
         // Should throw a RangeError upon UINT64_MAX+1 being written
         assert.throws(() => {
-          const val = 0x10000000000000000n;
+          const val = BigInt('0x10000000000000000');
           buf['writeBigUInt64' + endianness](val, 0);
         }, (err) => {
           assert(err instanceof RangeError);
@@ -3313,13 +3316,16 @@ describe('Buffer', () => {
         }, TypeError);
       }
 
-      ['', Symbol(), true, false, {}, [], () => {}, 1, 1n, null, undefined].forEach(
+      if (typeof BigInt !== 'function')
+        return;
+
+      ['', Symbol(), true, false, {}, [], () => {}, 1, BigInt(1), null, undefined].forEach(
         notTypedArray => assert.throws(() => {
           Buffer.copyBytesFrom(notTypedArray);
         }, TypeError)
       );
 
-      ['', Symbol(), true, false, {}, [], () => {}, 1n].forEach(notANumber =>
+      ['', Symbol(), true, false, {}, [], () => {}, BigInt(1)].forEach(notANumber =>
         assert.throws(() => {
           Buffer.copyBytesFrom(new Uint8Array(1), notANumber);
         }, TypeError)
@@ -3331,7 +3337,7 @@ describe('Buffer', () => {
         }, RangeError)
       );
 
-      ['', Symbol(), true, false, {}, [], () => {}, 1n].forEach(notANumber =>
+      ['', Symbol(), true, false, {}, [], () => {}, BigInt(1)].forEach(notANumber =>
         assert.throws(() => {
           Buffer.copyBytesFrom(new Uint8Array(1), 0, notANumber);
         }, TypeError)
@@ -7481,6 +7487,9 @@ describe('Buffer', () => {
 
   describe('Custom', () => {
     it('should read/write integers', () => {
+      if (typeof BigInt !== 'function')
+        this.skip();
+
       const vectors1 = [
         ['Int8',      1, -0x7e],
         ['Int8',      1, 0x7e],
@@ -7492,11 +7501,11 @@ describe('Buffer', () => {
         ['Int16',     2, 0x7ead],
         ['Int32',     4, -0x7eadbeef],
         ['Int32',     4, 0x7eadbeef],
-        ['BigInt64',  8, -0x7eadbeef01234567n],
-        ['BigInt64',  8, 0x7eadbeef01234567n],
+        ['BigInt64',  8, -BigInt('0x7eadbeef01234567')],
+        ['BigInt64',  8, BigInt('0x7eadbeef01234567')],
         ['UInt16',    2, 0xdead],
         ['UInt32',    4, 0xdeadbeef],
-        ['BigUInt64', 8, 0xdeadbeef01234567n],
+        ['BigUInt64', 8, BigInt('0xdeadbeef01234567')],
         ['Float',     4, -0x7ead],
         ['Float',     4, 0x7ead],
         ['Double',    8, -0x7eadbeef],

@@ -46,6 +46,7 @@ const HELP = `
     -C, --cjs                output module as CommonJS
     -u, --umd                append UMD initialization code to browser bundle
     -L, --loose              loose ESM transformations
+    --es2015                 use es2015 features for ESM transformations
     -N, --name <name>        name to use for global exposure (default: pkg.name)
     -p, --plugin <plugin>    use plugin
     -r, --requires <a,b,..>  comma-separated list of requires
@@ -124,6 +125,7 @@ async function parseArgs() {
     release: false,
     target: null,
     loose: false,
+    es2015: false,
     name: null,
     plugins: [],
     environment: Object.create(null),
@@ -336,6 +338,11 @@ async function parseArgs() {
       case '-L':
       case '--loose': {
         options.loose = true;
+        break;
+      }
+
+      case '--es2015': {
+        options.es2015 = true;
         break;
       }
 

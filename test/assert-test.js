@@ -142,7 +142,9 @@ describe('Assert', function() {
 
     assert(err instanceof Error);
     assert.equal(err.name, 'AssertionError');
-    assert.match(String(err.stack), /^AssertionError \[ERR_ASSERTION\]/);
+
+    if (!process.browser || global.chrome)
+      assert.match(String(err.stack), /^AssertionError \[ERR_ASSERTION\]/);
   });
 
   it('should do assert', () => {

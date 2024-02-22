@@ -2581,7 +2581,7 @@ describe('Buffer', function() {
       }
     });
 
-    it('test-buffer-bigint64', () => {
+    it('test-buffer-bigint64', function() {
       const buf = Buffer.allocUnsafe(8);
 
       if (typeof BigInt !== 'function')
@@ -7486,7 +7486,7 @@ describe('Buffer', function() {
   });
 
   describe('Custom', () => {
-    it('should read/write integers', () => {
+    it('should read/write integers', function() {
       if (typeof BigInt !== 'function')
         this.skip();
 

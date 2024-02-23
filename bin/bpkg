@@ -50,7 +50,6 @@ const HELP = `
     -N, --name <name>        name to use for global exposure (default: pkg.name)
     -p, --plugin <plugin>    use plugin
     -r, --requires <a,b,..>  comma-separated list of requires
-    -I, --imports <a,b,..>   comma-separated list of imports
     -E, --environment <k=v>  key-value pairs for process.env
     -g, --globals <k=v>      key-value pairs for global
     --fields     <a,b,..>    user shim fields
@@ -131,7 +130,6 @@ async function parseArgs() {
     environment: Object.create(null),
     globals: Object.create(null),
     requires: [],
-    imports: [],
     fields: [],
     conditions: [],
     entryType: null,
@@ -440,18 +438,6 @@ async function parseArgs() {
           throw new Error(`Invalid option for: ${arg}.`);
 
         options.requires.push(...next.split(','));
-
-        i += 1;
-
-        break;
-      }
-
-      case '-I':
-      case '--imports': {
-        if (!next || next[0] === '-')
-          throw new Error(`Invalid option for: ${arg}.`);
-
-        options.imports.push(...next.split(','));
 
         i += 1;
 

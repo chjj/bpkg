@@ -29,8 +29,8 @@ const HELP = `
     -R, --renv <name>        set resolver environment (default: --env)
     -n, --node               set environment to node
     -b, --browser            set environment to browser
-    -x, --extensions <ext>   list of extensions (default: .js,.json,.node)
-    --external <names>       comma-separated blacklist of modules
+    -x, --extensions <ext>   list of extensions (default: js,json,node)
+    -B, --external <names>   comma-separated blacklist of modules
     --local-only             only include local modules
     -f, --browser-field      force usage of package.json "browser" field
     -i, --ignore-missing     ignore missing modules during compilation
@@ -49,9 +49,9 @@ const HELP = `
     --es2015                 use es2015 features for ESM transformations
     -N, --name <name>        name to use for global exposure (default: pkg.name)
     -p, --plugin <plugin>    use plugin
-    -r, --requires <a,b,..>  comma-separated list of requires
-    -E, --environment <k=v>  key-value pairs for process.env
-    -g, --globals <k=v>      key-value pairs for global
+    -r, --require <name>     require the given module
+    -E, --environment <k=v>  set environment variable
+    -g, --global <name=val>  set global variable
     --fields     <a,b,..>    user shim fields
     --conditions <a,b,..>    user conditionals
     --entry-type <type>      main module entry type ("commonjs" or "module")
@@ -209,13 +209,19 @@ async function parseArgs() {
         if (!next || next[0] === '-')
           throw new Error(`Invalid option for: ${arg}.`);
 
-        options.extensions.push(...next.split(','));
+        for (let ext of next.split(',')) {
+          if (ext[0] !== '.')
+            ext = '.' + ext;
+
+          options.extensions.push(ext);
+        }
 
         i += 1;
 
         break;
       }
 
+      case '-B':
       case '--external': {
         if (!next || next[0] === '-')
           throw new Error(`Invalid option for: ${arg}.`);
@@ -397,30 +403,25 @@ async function parseArgs() {
       }
 
       case '-g':
-      case '--globals':
+      case '--global':
       case '-E':
       case '--environment': {
         if (!next || next[0] === '-')
           throw new Error(`Invalid option for: ${arg}.`);
 
-        const target = arg === '-g' || arg === '--globals'
+        const target = arg === '-g' || arg === '--global'
           ? options.globals
           : options.environment;
 
-        const pairs = next.split(',');
+        const index = next.indexOf('=');
 
-        for (const pair of pairs) {
-          const index = pair.indexOf('=');
-
-          if (index === -1) {
-            target[pair] = true;
-            continue;
-          }
-
-          const key = pair.substring(0, index);
-          const value = pair.substring(index + 1);
+        if (index >= 0) {
+          const key = next.substring(0, index);
+          const value = next.substring(index + 1);
 
           target[key] = value;
+        } else {
+          target[next] = true;
         }
 
         i += 1;
@@ -429,11 +430,11 @@ async function parseArgs() {
       }
 
       case '-r':
-      case '--requires': {
+      case '--require': {
         if (!next || next[0] === '-')
           throw new Error(`Invalid option for: ${arg}.`);
 
-        options.requires.push(...next.split(','));
+        options.requires.push(next);
 
         i += 1;
 

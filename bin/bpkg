@@ -301,12 +301,8 @@ async function parseArgs() {
         if (!next || next[0] === '-')
           throw new Error(`Invalid option for: ${arg}.`);
 
-        if (next !== 'cjs' &&
-            next !== 'umd' &&
-            next !== 'esm' &&
-            next !== 'esm-sync') {
-          throw new Error('--target must be one of cjs, umd, esm, esm-sync.');
-        }
+        if (next !== 'cjs' && next !== 'umd' && next !== 'esm')
+          throw new Error('--target must be one of cjs, umd, or esm.');
 
         options.target = next;
 

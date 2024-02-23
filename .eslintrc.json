@@ -6,7 +6,7 @@
   "extends": "eslint:recommended",
   "overrides": [
     {
-      "files": ["*.mjs", "lib/templates/node.js"],
+      "files": ["*.mjs", "lib/templates/{browser,node}.js"],
       "parserOptions": {
         "sourceType": "module"
       }

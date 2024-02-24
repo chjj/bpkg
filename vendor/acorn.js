@@ -1,7 +1,7 @@
 /*!
  * acorn-wrap@0.0.0
  *
- * License for acorn@8.11.2:
+ * License for acorn@8.11.3:
  *
  * MIT License
  *
@@ -25,7 +25,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  *
- * License for acorn-walk@8.3.0:
+ * License for acorn-walk@8.3.2:
  *
  * MIT License
  *
@@ -54,12 +54,12 @@ var __node_modules__ = [
 [/* 0 */ 'acorn-wrap', '/index.js', 0, function(exports, require, module, __filename, __dirname) {
 'use strict';
 
-const acorn = __node_require__(1 /* 'acorn' */);
-const walk = __node_require__(2 /* 'acorn-walk' */);
+const acorn = __node_require__(1 /* 'acorn' */, 0);
+const walk = __node_require__(2 /* 'acorn-walk' */, 0);
 
-const Parser = acorn.Parser.extend();
-
-walk.base.Import = (node, st, c) => {};
+const Parser = acorn.Parser.extend(
+  __node_require__(3 /* './acorn-import-attributes' */, 0)
+);
 
 acorn.parse = Parser.parse.bind(Parser);
 acorn.parseExpressionAt = Parser.parseExpressionAt.bind(Parser);
@@ -3013,12 +3013,14 @@ module.exports = acorn;
     // Consume `import` as an identifier for `import.meta`.
     // Because `this.parseIdent(true)` doesn't check escape sequences, it needs the check of `this.containsEsc`.
     if (this.containsEsc) { this.raiseRecoverable(this.start, "Escape sequence in keyword import"); }
-    var meta = this.parseIdent(true);
+    this.next();
 
     if (this.type === types$1.parenL && !forNew) {
       return this.parseDynamicImport(node)
     } else if (this.type === types$1.dot) {
-      node.meta = meta;
+      var meta = this.startNodeAt(node.start, node.loc && node.loc.start);
+      meta.name = "import";
+      node.meta = this.finishNode(meta, "Identifier");
       return this.parseImportMeta(node)
     } else {
       this.unexpected();
@@ -3168,7 +3170,7 @@ module.exports = acorn;
     var node = this.startNode();
     this.next();
     if (this.options.ecmaVersion >= 6 && this.type === types$1.dot) {
-      var meta = this.startNodeAt(node.start, node.startLoc);
+      var meta = this.startNodeAt(node.start, node.loc && node.loc.start);
       meta.name = "new";
       node.meta = this.finishNode(meta, "Identifier");
       this.next();
@@ -5996,7 +5998,7 @@ module.exports = acorn;
   // [walk]: util/walk.js
 
 
-  var version = "8.11.2";
+  var version = "8.11.3";
 
   Parser.acorn = {
     Parser: Parser,
@@ -6021,11 +6023,10 @@ module.exports = acorn;
   };
 
   // The main exported interface (under `self.acorn` when in the
-  // browser) is a `parse` function that takes a code string and
-  // returns an abstract syntax tree as specified by [Mozilla parser
-  // API][api].
+  // browser) is a `parse` function that takes a code string and returns
+  // an abstract syntax tree as specified by the [ESTree spec][estree].
   //
-  // [api]: https://developer.mozilla.org/en-US/docs/SpiderMonkey/Parser_API
+  // [estree]: https://github.com/estree/estree
 
   function parse(input, options) {
     return Parser.parse(input, options)
@@ -6078,7 +6079,7 @@ module.exports = acorn;
   (global = typeof globalThis !== 'undefined' ? globalThis : global || self, factory((global.acorn = global.acorn || {}, global.acorn.walk = {})));
 })(this, (function (exports) { 'use strict';
 
-  // AST walker module for Mozilla Parser API compatible trees
+  // AST walker module for ESTree compatible trees
 
   // A simple walk is one where you simply specify callbacks to be
   // called on specific nodes. The last two arguments are optional. A
@@ -6088,7 +6089,7 @@ module.exports = acorn;
   //         Expression: function(node) { ... }
   //     });
   //
-  // to do something with all expressions. All Parser API node types
+  // to do something with all expressions. All ESTree node types
   // can be used to identify node types, as well as Expression and
   // Statement, which denote categories of nodes.
   //
@@ -6099,9 +6100,9 @@ module.exports = acorn;
   function simple(node, visitors, baseVisitor, state, override) {
     if (!baseVisitor) { baseVisitor = base
     ; }(function c(node, st, override) {
-      var type = override || node.type, found = visitors[type];
+      var type = override || node.type;
       baseVisitor[type](node, st, c);
-      if (found) { found(node, st); }
+      if (visitors[type]) { visitors[type](node, st); }
     })(node, state, override);
   }
 
@@ -6112,11 +6113,11 @@ module.exports = acorn;
     var ancestors = [];
     if (!baseVisitor) { baseVisitor = base
     ; }(function c(node, st, override) {
-      var type = override || node.type, found = visitors[type];
+      var type = override || node.type;
       var isNew = node !== ancestors[ancestors.length - 1];
       if (isNew) { ancestors.push(node); }
       baseVisitor[type](node, st, c);
-      if (found) { found(node, st || ancestors, ancestors); }
+      if (visitors[type]) { visitors[type](node, st || ancestors, ancestors); }
       if (isNew) { ancestors.pop(); }
     })(node, state, override);
   }
@@ -6533,6 +6534,187 @@ module.exports = acorn;
   exports.simple = simple;
 
 }));
+}],
+[/* 3 */ 'acorn-wrap', '/acorn-import-attributes.js', 0, function(exports, require, module, __filename, __dirname) {
+/*!
+ * MIT License
+ *
+ * Copyright (c) 2023 Sven Sauleau
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
+'use strict';
+
+const acorn = __node_require__(1 /* 'acorn' */, 0);
+
+const leftCurlyBrace = "{".charCodeAt(0);
+const space = " ".charCodeAt(0);
+
+const keyword = "with";
+
+function importAttributes(Parser) {
+  const { tokTypes: tt, TokenType } = acorn;
+
+  return class extends Parser {
+    constructor(...args) {
+      super(...args);
+      this.withToken = new TokenType(keyword);
+    }
+
+    _codeAt(i) {
+      return this.input.charCodeAt(i);
+    }
+
+    _eat(t) {
+      if (this.type !== t) {
+        this.unexpected();
+      }
+      this.next();
+    }
+
+    readToken(code) {
+      let i = 0;
+      for (; i < keyword.length; i++) {
+        if (this._codeAt(this.pos + i) !== keyword.charCodeAt(i)) {
+          return super.readToken(code);
+        }
+      }
+
+      // ensure that the keyword is at the correct location
+      // ie `with{...` or `with {...`
+      for (;; i++) {
+        if (this._codeAt(this.pos + i) === leftCurlyBrace) {
+          // Found '{'
+          break;
+        } else if (this._codeAt(this.pos + i) === space) {
+          // white space is allowed between `with` and `{`, so continue.
+          continue;
+        } else {
+          return super.readToken(code);
+        }
+      }
+
+      // If we're inside a dynamic import expression we'll parse
+      // the `with` keyword as a standard object property name
+      // ie `import(""./foo.json", { with: { type: "json" } })`
+      if (this.type.label === "{") {
+        return super.readToken(code);
+      }
+
+      this.pos += keyword.length;
+      return this.finishToken(this.withToken);
+    }
+
+    parseDynamicImport(node) {
+      this.next(); // skip `(`
+
+      // Parse node.source.
+      node.source = this.parseMaybeAssign();
+
+      if (this.eat(tt.comma)) {
+        const expr = this.parseExpression();
+        node.arguments = [expr];
+      }
+      this._eat(tt.parenR);
+      return this.finishNode(node, "ImportExpression");
+    }
+
+    parseImport(node) {
+      this.next();
+      // import '...'
+      if (this.type === tt.string) {
+        node.specifiers = [];
+        node.source = this.parseExprAtom();
+      } else {
+        node.specifiers = this.parseImportSpecifiers();
+        this.expectContextual("from");
+        node.source =
+          this.type === tt.string ? this.parseExprAtom() : this.unexpected();
+      }
+
+      if (this.type === this.withToken || this.type === tt._with) {
+        this.next();
+        const attributes = this.parseImportAttributes();
+        if (attributes) {
+          node.attributes = attributes;
+        }
+      }
+      this.semicolon();
+      return this.finishNode(node, "ImportDeclaration");
+    }
+
+    parseImportAttributes() {
+      this._eat(tt.braceL);
+      const attrs = this.parsewithEntries();
+      this._eat(tt.braceR);
+      return attrs;
+    }
+
+    parsewithEntries() {
+      const attrs = [];
+      const attrNames = new Set();
+
+      do {
+        if (this.type === tt.braceR) {
+          break;
+        }
+
+        const node = this.startNode();
+
+        // parse withionKey : IdentifierName, StringLiteral
+        let withionKeyNode;
+        if (this.type === tt.string) {
+          withionKeyNode = this.parseLiteral(this.value);
+        } else {
+          withionKeyNode = this.parseIdent(true);
+        }
+        this.next();
+        node.key = withionKeyNode;
+
+        // check if we already have an entry for an attribute
+        // if a duplicate entry is found, throw an error
+        // for now this logic will come into play only when someone
+        // declares `type` twice
+        if (attrNames.has(node.key.name)) {
+          this.raise(this.pos, "Duplicated key in attributes");
+        }
+        attrNames.add(node.key.name);
+
+        if (this.type !== tt.string) {
+          this.raise(
+            this.pos,
+            "Only string is supported as an attribute value"
+          );
+        }
+
+        node.value = this.parseLiteral(this.value);
+
+        attrs.push(this.finishNode(node, "ImportAttribute"));
+      } while (this.eat(tt.comma));
+
+      return attrs;
+    }
+  };
+}
+
+module.exports = importAttributes;
 }]
 ];
 
@@ -6552,10 +6734,7 @@ function __node_reject__(specifier) {
   return Promise.reject(__node_error__(specifier));
 }
 
-function __node_require__(id) {
-  if ((id >>> 0) !== id || id > __node_modules__.length)
-    return __node_throw__(id);
-
+function __node_require__(id, flag) {
   while (__node_cache__.length <= id)
     __node_cache__.push(null);
 
@@ -6565,8 +6744,6 @@ function __node_require__(id) {
     return cache.exports;
 
   var mod = __node_modules__[id];
-  var name = mod[0];
-  var path = mod[1];
   var esm = mod[2];
   var func = mod[3];
   var meta;
@@ -6575,19 +6752,22 @@ function __node_require__(id) {
   var _module = module;
 
   if (id !== 0) {
-    _exports = {};
+    _exports = esm ? { __proto__: null } : {};
     _module = {
-      id: '/' + name + path,
-      path: ('/' + name + path).split('/').slice(0, -1).join('/'),
+      id: __filename,
+      path: __dirname,
       exports: _exports,
       parent: module,
-      filename: module.filename,
+      filename: __filename,
       isPreloading: false,
       loaded: false,
       children: module.children,
       paths: module.paths,
       require: require
     };
+  } else if (esm) {
+    _exports = { __proto__: null };
+    _module.exports = _exports;
   }
 
   __node_cache__[id] = _module;
@@ -6612,4 +6792,4 @@ function __node_require__(id) {
   return _module.exports;
 }
 
-__node_require__(0);
+__node_require__(0, 0);

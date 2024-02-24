@@ -18,10 +18,11 @@ $ bpkg -h
     -v, --version            output the version number
     -o, --output <file>      output file or directory (default: stdout)
     -e, --env <name>         set environment, node or browser (default: node)
+    -R, --renv <name>        set resolver environment (default: --env)
     -n, --node               set environment to node
     -b, --browser            set environment to browser
-    -x, --extensions <ext>   list of extensions (default: .js,.json,.node)
-    --external <names>       comma-separated blacklist of modules
+    -x, --extensions <ext>   list of extensions (default: js,json,node)
+    -B, --external <names>   comma-separated blacklist of modules
     --local-only             only include local modules
     -f, --browser-field      force usage of package.json "browser" field
     -i, --ignore-missing     ignore missing modules during compilation
@@ -37,11 +38,17 @@ $ bpkg -h
     -C, --cjs                output module as CommonJS
     -u, --umd                append UMD initialization code to browser bundle
     -L, --loose              loose ESM transformations
+    --es2015                 use es2015 features for ESM transformations
     -N, --name <name>        name to use for global exposure (default: pkg.name)
     -p, --plugin <plugin>    use plugin
-    -r, --requires <a,b,..>  comma-separated list of requires
-    -E, --environment <k=v>  key-value pairs for process.env
-    -g, --globals <k=v>      key-value pairs for global
+    -r, --require <name>     require the given module
+    -E, --environment <k=v>  set environment variable
+    -g, --global <name=val>  set global variable
+    --fields     <a,b,..>    user shim fields
+    --conditions <a,b,..>    user conditionals
+    --entry-type <type>      main module entry type ("commonjs" or "module")
+    --wasm-modules           experimental wasm modules
+    --detect-module          experimental module detection
     -h, --help               output usage information
 ```
 

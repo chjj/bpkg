@@ -1,9 +1,9 @@
 /*!
- * terser@5.28.0
+ * terser@5.28.1
  * Copyright (c) 2024, Mihai Bazon (BSD-2-Clause)
  * https://terser.org
  *
- * License for terser@5.28.0:
+ * License for terser@5.28.1:
  *
  * Copyright 2012-2018 (c) Mihai Bazon <mihai.bazon@gmail.com>
  *
@@ -12542,7 +12542,6 @@ __node_require__(20 /* './reduce-vars.js' */, 0);
 const __bpkg_import_7__ = __node_require__(14 /* './inference.js' */, 0);
 const {
   is_undeclared_ref,
-  bitwise_binop,
   lazy_op,
   is_nullish,
   is_undefined,
@@ -12746,33 +12745,6 @@ class Compressor extends TreeWalker {
                         || p.operator == "??"
                     )
                 || p instanceof AST_Conditional
-                || p.tail_node() === self
-            ) {
-                self = p;
-            } else {
-                return false;
-            }
-        }
-    }
-
-    in_32_bit_context() {
-        if (!this.option("evaluate")) return false;
-        var self = this.self();
-        for (var i = 0, p; p = this.parent(i); i++) {
-            if (p instanceof AST_Binary && bitwise_binop.has(p.operator)) {
-                return true;
-            }
-            if (p instanceof AST_UnaryPrefix) {
-                return p.operator === "~";
-            }
-            if (
-                p instanceof AST_Binary
-                    && (
-                        p.operator == "&&"
-                        || p.operator == "||"
-                        || p.operator == "??"
-                    )
-                || p instanceof AST_Conditional && p.condition !== self
                 || p.tail_node() === self
             ) {
                 self = p;
@@ -14480,40 +14452,9 @@ def_optimize(AST_UnaryPrefix, function(self, compressor) {
             right: e.right
         });
     }
-
-    if (compressor.option("evaluate")) {
-        // ~~x => x (in 32-bit context)
-        // ~~{32 bit integer} => {32 bit integer}
-        if (
-            self.operator === "~"
-            && self.expression instanceof AST_UnaryPrefix
-            && self.expression.operator === "~"
-            && (compressor.in_32_bit_context() || self.expression.expression.is_32_bit_integer())
-        ) {
-            return self.expression.expression;
-        }
-
-        // ~(x ^ y) => x ^ ~y
-        if (
-            self.operator === "~"
-            && e instanceof AST_Binary
-            && e.operator === "^"
-        ) {
-            if (e.left instanceof AST_UnaryPrefix && e.left.operator === "~") {
-                // ~(~x ^ y) => x ^ y
-                e.left = e.left.bitwise_negate(true);
-            } else {
-                e.right = e.right.bitwise_negate(true);
-            }
-            return e;
-        }
-    }
-
-    if (
-        self.operator != "-"
-        // avoid infinite recursion of numerals
-        || !(e instanceof AST_Number || e instanceof AST_Infinity || e instanceof AST_BigInt)
-    ) {
+    // avoids infinite recursion of numerals
+    if (self.operator != "-"
+        || !(e instanceof AST_Number || e instanceof AST_Infinity || e instanceof AST_BigInt)) {
         var ev = self.evaluate(compressor);
         if (ev !== self) {
             ev = make_node_from_constant(ev, self).optimize(compressor);
@@ -14604,7 +14545,6 @@ def_optimize(AST_Binary, function(self, compressor) {
             self.left.equivalent_to(self.right)) {
             self.operator = self.operator.substr(0, 2);
         }
-
         // XXX: intentionally falling down to the next case
       case "==":
       case "!=":
@@ -14646,55 +14586,6 @@ def_optimize(AST_Binary, function(self, compressor) {
             && self.left.definition() === self.right.definition()
             && is_object(self.left.fixed_value())) {
             return make_node(self.operator[0] == "=" ? AST_True : AST_False, self);
-        } else if (self.left.is_32_bit_integer() && self.right.is_32_bit_integer()) {
-            const not = node => make_node(AST_UnaryPrefix, node, {
-                operator: "!",
-                expression: node
-            });
-            const booleanify = (node, truthy) => {
-                if (truthy) {
-                    return compressor.in_boolean_context()
-                        ? node
-                        : not(not(node));
-                } else {
-                    return not(node);
-                }
-            };
-
-            // The only falsy 32-bit integer is 0
-            if (self.left instanceof AST_Number && self.left.value === 0) {
-                return booleanify(self.right, self.operator[0] === "!");
-            }
-            if (self.right instanceof AST_Number && self.right.value === 0) {
-                return booleanify(self.left, self.operator[0] === "!");
-            }
-
-            // Mask all-bits check
-            // (x & 0xFF) != 0xFF => !(~x & 0xFF)
-            let and_op, x, mask;
-            if (
-                (and_op =
-                    self.left instanceof AST_Binary ? self.left
-                    : self.right instanceof AST_Binary ? self.right : null)
-                && (mask = and_op === self.left ? self.right : self.left)
-                && and_op.operator === "&"
-                && mask instanceof AST_Number
-                && mask.is_32_bit_integer()
-                && (x =
-                    and_op.left.equivalent_to(mask) ? and_op.right
-                    : and_op.right.equivalent_to(mask) ? and_op.left : null)
-            ) {
-                let optimized = booleanify(make_node(AST_Binary, self, {
-                    operator: "&",
-                    left: mask,
-                    right: make_node(AST_UnaryPrefix, self, {
-                        operator: "~",
-                        expression: x
-                    })
-                }), self.operator[0] === "=");
-
-                return best_of(compressor, optimized, self);
-            }
         }
         break;
       case "&&":
@@ -15066,157 +14957,6 @@ def_optimize(AST_Binary, function(self, compressor) {
                         right: self.right.right
                     });
                 }
-            }
-        }
-
-        // bitwise ops
-        if (bitwise_binop.has(self.operator)) {
-            // Use De Morgan's laws
-            // z & (X | y)
-            // => z & X (given y & z === 0)
-            // => z & X | {y & z} (given y & z !== 0)
-            let y, z, x_node, y_node, z_node = self.left;
-            if (
-                self.operator === "&"
-                && self.right instanceof AST_Binary
-                && self.right.operator === "|"
-                && typeof (z = self.left.evaluate(compressor)) === "number"
-            ) {
-                if (typeof (y = self.right.right.evaluate(compressor)) === "number") {
-                    // z & (X | y)
-                    x_node = self.right.left;
-                    y_node = self.right.right;
-                } else if (typeof (y = self.right.left.evaluate(compressor)) === "number") {
-                    // z & (y | X)
-                    x_node = self.right.right;
-                    y_node = self.right.left;
-                }
-
-                if ((y & z) === 0) {
-                    self = make_node(AST_Binary, self, {
-                        operator: self.operator,
-                        left: z_node,
-                        right: x_node
-                    });
-                } else {
-                    const reordered_ops = make_node(AST_Binary, self, {
-                        operator: "|",
-                        left: make_node(AST_Binary, self, {
-                            operator: "&",
-                            left: x_node,
-                            right: z_node
-                        }),
-                        right: make_node_from_constant(y & z, y_node),
-                    });
-
-                    self = best_of(compressor, self, reordered_ops);
-                }
-            }
-
-            // x ^ x => 0
-            // x | x => 0 | x
-            // x & x => 0 | x
-            const same_operands = self.left.equivalent_to(self.right) && !self.left.has_side_effects(compressor);
-            if (same_operands) {
-                if (self.operator === "^") {
-                    return make_node(AST_Number, self, { value: 0 });
-                }
-                if (self.operator === "|" || self.operator === "&") {
-                    self.left = make_node(AST_Number, self, { value: 0 });
-                    self.operator = "|";
-                }
-            }
-
-
-            // Shifts that do nothing
-            // {anything} >> 0 => {anything} | 0
-            // {anything} << 0 => {anything} | 0
-            if (
-                (self.operator === "<<" || self.operator === ">>")
-                && self.right instanceof AST_Number && self.right.value === 0
-            ) {
-                self.operator = "|";
-            }
-
-            // Find useless to-bitwise conversions
-            // {32 bit integer} | 0 => {32 bit integer}
-            // {32 bit integer} ^ 0 => {32 bit integer}
-            const zero_side = self.right instanceof AST_Number && self.right.value === 0 ? self.right
-                : self.left instanceof AST_Number && self.left.value === 0 ? self.left
-                : null;
-            const non_zero_side = zero_side && (zero_side === self.right ? self.left : self.right);
-            if (
-                zero_side
-                && (self.operator === "|" || self.operator === "^")
-                && (non_zero_side.is_32_bit_integer() || compressor.in_32_bit_context())
-            ) {
-                return non_zero_side;
-            }
-
-            // {anything} & 0 => 0
-            if (
-                zero_side
-                && self.operator === "&"
-                && !non_zero_side.has_side_effects(compressor)
-            ) {
-                return zero_side;
-            }
-
-            const is_full_mask = (node) =>
-                node instanceof AST_Number && node.value === -1
-                ||
-                    node instanceof AST_UnaryPrefix && (
-                        node.operator === "-"
-                            && node.expression instanceof AST_Number
-                            && node.expression.value === 1
-                        || node.operator === "~"
-                            && node.expression instanceof AST_Number
-                            && node.expression.value === 0);
-
-            const full_mask = is_full_mask(self.right) ? self.right
-                : is_full_mask(self.left) ? self.left
-                : null;
-            const non_full_mask_side = full_mask && (full_mask === self.right ? self.left : self.right);
-
-            switch (self.operator) {
-              case "|":
-                // {anything} | -1 => -1
-                if (full_mask && !non_full_mask_side.has_side_effects(compressor)) {
-                    return full_mask;
-                }
-
-                break;
-              case "&":
-                // {32 bit integer} & -1 => {32 bit integer}
-                if (
-                    full_mask
-                    && (non_full_mask_side.is_32_bit_integer() || compressor.in_32_bit_context())
-                ) {
-                    return non_full_mask_side;
-                }
-
-                break;
-              case "^":
-                // {anything} ^ -1 => ~{anything}
-                if (full_mask) {
-                    return non_full_mask_side.bitwise_negate(compressor.in_32_bit_context());
-                }
-
-                // ~x ^ ~y => x ^ y
-                if (
-                    self.left instanceof AST_UnaryPrefix
-                    && self.left.operator === "~"
-                    && self.right instanceof AST_UnaryPrefix
-                    && self.right.operator === "~"
-                ) {
-                    self = make_node(AST_Binary, self, {
-                        operator: "^",
-                        left: self.left.expression,
-                        right: self.right.expression
-                    });
-                }
-
-                break;
             }
         }
     }
@@ -18217,8 +17957,8 @@ AST_Class.prototype._size = function () {
 };
 
 AST_ClassStaticBlock.prototype._size = function () {
-    // "static{}" + semicolons
-    return 8 + list_overhead(this.body);
+    // "class{}" + semicolons
+    return 7 + list_overhead(this.body);
 };
 
 AST_ClassProperty.prototype._size = function () {
@@ -18458,14 +18198,7 @@ def_eval(AST_Constant, function () {
     return this.getValue();
 });
 
-const supports_bigint = typeof BigInt === "function";
-def_eval(AST_BigInt, function () {
-    if (supports_bigint) {
-        return BigInt(this.value);
-    } else {
-        return this;
-    }
-});
+def_eval(AST_BigInt, return_this);
 
 def_eval(AST_RegExp, function (compressor) {
     let evaluated = compressor.evaluated_regexps.get(this.value);
@@ -18589,6 +18322,7 @@ def_eval(AST_Binary, function (compressor, depth) {
     var right = this.right._eval(compressor, depth);
     if (right === this.right)
         return this;
+    var result;
 
     if (left != null
         && right != null
@@ -18600,17 +18334,6 @@ def_eval(AST_Binary, function (compressor, depth) {
         return this;
     }
 
-    // Do not mix BigInt and Number; Don't use `>>>` on BigInt or `/ 0n`
-    if (
-        (typeof left === "bigint") !== (typeof right === "bigint")
-        || typeof left === "bigint"
-            && (this.operator === ">>>"
-                || this.operator === "/" && Number(right) === 0)
-    ) {
-        return this;
-    }
-
-    var result;
     switch (this.operator) {
         case "&&": result = left && right; break;
         case "||": result = left || right; break;
@@ -18620,7 +18343,7 @@ def_eval(AST_Binary, function (compressor, depth) {
         case "^": result = left ^ right; break;
         case "+": result = left + right; break;
         case "*": result = left * right; break;
-        case "**": result = left ** right; break;
+        case "**": result = Math.pow(left, right); break;
         case "/": result = left / right; break;
         case "%": result = left % right; break;
         case "-": result = left - right; break;
@@ -18638,7 +18361,7 @@ def_eval(AST_Binary, function (compressor, depth) {
         default:
             return this;
     }
-    if (typeof result === "number" && isNaN(result) && compressor.find_parent(AST_With)) {
+    if (isNaN(result) && compressor.find_parent(AST_With)) {
         // leave original expression as is
         return this;
     }
@@ -18982,9 +18705,6 @@ const is_undeclared_ref = (node) =>
 __exports.is_undeclared_ref = is_undeclared_ref;
 
 
-const bitwise_binop = makePredicate("<<< >> << & | ^ ~");
-__exports.bitwise_binop = bitwise_binop;
-
 const lazy_op = makePredicate("&& || ??");
 __exports.lazy_op = lazy_op;
 
@@ -19048,24 +18768,6 @@ __exports.unary_side_effects = unary_side_effects;
 })(function(node, func) {
     node.DEFMETHOD("is_number", func);
 });
-
-// methods to determine if an expression is a 32 bit integer (IE results from bitwise ops, or is an integer constant fitting in that size
-(function(def_is_32_bit_integer) {
-    def_is_32_bit_integer(AST_Node, return_false);
-    def_is_32_bit_integer(AST_Number, function() {
-        return this.value === (this.value | 0);
-    });
-    def_is_32_bit_integer(AST_UnaryPrefix, function() {
-        return this.operator == "~" ? this.expression.is_number()
-            : this.operator === "+" ? this.expression.is_32_bit_integer()
-            : false;
-    });
-    def_is_32_bit_integer(AST_Binary, function() {
-        return bitwise_binop.has(this.operator);
-    });
-}(function (node, func) {
-    node.DEFMETHOD("is_32_bit_integer", func);
-}));
 
 // methods to determine if an expression has a string result type
 (function(def_is_string) {
@@ -19689,37 +19391,6 @@ __exports.is_lhs = is_lhs;
     });
 });
 
-(function (def_bitwise_negate) {
-    function basic_negation(exp) {
-        return make_node(AST_UnaryPrefix, exp, {
-            operator: "~",
-            expression: exp
-        });
-    }
-
-    def_bitwise_negate(AST_Node, function() {
-        return basic_negation(this);
-    });
-
-    def_bitwise_negate(AST_Number, function() {
-        const neg = ~this.value;
-        if (neg.toString().length > this.value.toString().length) {
-            return basic_negation(this);
-        }
-        return make_node(AST_Number, this, { value: neg });
-    });
-
-    def_bitwise_negate(AST_UnaryPrefix, function(in_32_bit_context) {
-        if (this.operator == "~" && (in_32_bit_context || this.expression.is_32_bit_integer())) {
-            return this.expression;
-        } else {
-            return basic_negation(this);
-        }
-    });
-})(function (node, func) {
-    node.DEFMETHOD("bitwise_negate", func);
-});
-
 // Is the callee of this function pure?
 var global_pure_fns = makePredicate("Boolean decodeURI decodeURIComponent Date encodeURI encodeURIComponent Error escape EvalError isFinite isNaN Number Object parseFloat parseInt RangeError ReferenceError String SyntaxError TypeError unescape URIError");
 AST_Call.DEFMETHOD("is_callee_pure", function(compressor) {
@@ -19899,7 +19570,6 @@ const __bpkg_import_0__ = __node_require__(2 /* '../ast.js' */, 0);
 const {
   AST_Array,
   AST_Arrow,
-  AST_BigInt,
   AST_BlockStatement,
   AST_Call,
   AST_Chain,
@@ -19996,8 +19666,6 @@ function make_node_from_constant(val, orig) {
             operator: "-",
             expression: make_node(AST_Infinity, orig)
         }) : make_node(AST_Infinity, orig);
-      case "bigint":
-        return make_node(AST_BigInt, orig, { value: val.toString() });
       case "boolean":
         return make_node(val ? AST_True : AST_False, orig);
       case "undefined":

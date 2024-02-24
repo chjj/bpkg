@@ -7472,7 +7472,7 @@ __exports.js_error = js_error;
 __exports.JS_Parse_Error = JS_Parse_Error;
 __exports.parse = parse;
 __exports.PRECEDENCE = PRECEDENCE;
-__esm_expose__(__exports, 'ALL_RESERVED_WORDS', function() { return ALL_RESERVED_WORDS; });
+__esm_expose__(__exports, 'ALL_RESERVED_WORDS', () => ALL_RESERVED_WORDS);
 __exports.tokenizer = tokenizer;
 }],
 [/* 5 */ 'terser', '/lib/mozilla-ast.js', 1, function(__exports, __meta, __module) {

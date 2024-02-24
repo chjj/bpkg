@@ -74,7 +74,7 @@ async function buildModule(name, path, browser) {
   await bpkg({
     env: 'node',
     target: 'cjs',
-    loose: name !== 'terser',
+    es2015: true,
     time: DATE,
     renv: browser ? 'browser' : null,
     input,

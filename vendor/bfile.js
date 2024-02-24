@@ -1,9 +1,9 @@
 /*!
- * bfile@0.2.0 - Filesystem wrapper for node.js
- * Copyright (c) 2019, Christopher Jeffrey (MIT)
+ * bfile@0.2.3 - Filesystem wrapper for node.js
+ * Copyright (c) 2024, Christopher Jeffrey (MIT)
  * https://github.com/bcoin-org/bfile
  *
- * License for bfile@0.2.0:
+ * License for bfile@0.2.3:
  *
  * This software is licensed under the MIT License.
  *
@@ -29,7 +29,7 @@
  */
 
 var __node_modules__ = [
-[/* 0 */ 'bfile', '/lib/bfile.js', function(exports, module, __filename, __dirname, __meta) {
+[/* 0 */ 'bfile', '/lib/bfile.js', 0, function(exports, require, module, __filename, __dirname) {
 /*!
  * bfile.js - promisified fs module
  * Copyright (c) 2014-2019, Christopher Jeffrey (MIT License).
@@ -42,9 +42,11 @@ var __node_modules__ = [
  * Expose
  */
 
-module.exports = __node_require__(1 /* './fs' */);
+const fs = __node_require__(1 /* './fs' */, 0);
+
+module.exports = fs;
 }],
-[/* 1 */ 'bfile', '/lib/fs.js', function(exports, module, __filename, __dirname, __meta) {
+[/* 1 */ 'bfile', '/lib/fs.js', 0, function(exports, require, module, __filename, __dirname) {
 /*!
  * fs.js - promisified fs module for bcoin
  * Copyright (c) 2014-2019, Christopher Jeffrey (MIT License).
@@ -53,9 +55,9 @@ module.exports = __node_require__(1 /* './fs' */);
 
 'use strict';
 
-const fs = __node_require__(2 /* './backend' */);
-const extra = __node_require__(9 /* './extra' */);
-const features = __node_require__(3 /* './features' */);
+const fs = __node_require__(2 /* './backend' */, 0);
+const extra = __node_require__(9 /* './extra' */, 0);
+const features = __node_require__(3 /* './features' */, 0);
 
 /*
  * Extra
@@ -63,6 +65,8 @@ const features = __node_require__(3 /* './features' */);
 
 fs.copy = extra.copy;
 fs.copySync = extra.copySync;
+fs.empty = extra.empty;
+fs.emptySync = extra.emptySync;
 fs.exists = extra.exists;
 fs.existsSync = extra.existsSync;
 fs.lstatTry = extra.lstatTry;
@@ -96,7 +100,7 @@ fs.writeJSONSync = extra.writeJSONSync;
  * Promises
  */
 
-if (features.HAS_STABLE_PROMISES) {
+if (features.USE_STABLE_PROMISES) {
   const native = fs.realpath.native;
 
   fs.access = fs.promises.access;
@@ -110,6 +114,7 @@ if (features.HAS_STABLE_PROMISES) {
   fs.lstat = fs.promises.lstat;
   fs.mkdir = fs.promises.mkdir;
   fs.mkdtemp = fs.promises.mkdtemp;
+  fs.opendir = fs.promises.opendir;
   fs.handle = fs.promises.open;
   fs.readdir = fs.promises.readdir;
   fs.readFile = fs.promises.readFile;
@@ -140,7 +145,7 @@ if (features.HAS_STABLE_PROMISES) {
     enumerable: false,
     get() {
       if (!compat)
-        compat = __node_require__(8 /* './compat' */);
+        compat = __node_require__(8 /* './compat' */, 0);
 
       return compat.promises.open;
     }
@@ -160,7 +165,7 @@ fs.unsupported = false;
 
 module.exports = fs;
 }],
-[/* 2 */ 'bfile', '/lib/backend.js', function(exports, module, __filename, __dirname, __meta) {
+[/* 2 */ 'bfile', '/lib/backend.js', 0, function(exports, require, module, __filename, __dirname) {
 /*!
  * backend.js - backend selection for bfile
  * Copyright (c) 2014-2019, Christopher Jeffrey (MIT License).
@@ -169,18 +174,18 @@ module.exports = fs;
 
 'use strict';
 
-const features = __node_require__(3 /* './features' */);
+const features = __node_require__(3 /* './features' */, 0);
 
 /*
  * Expose
  */
 
 if (features.HAS_ALL)
-  module.exports = __node_require__(4 /* './modern' */);
+  module.exports = __node_require__(4 /* './modern' */, 0);
 else
-  module.exports = __node_require__(7 /* './legacy' */);
+  module.exports = __node_require__(7 /* './legacy' */, 0);
 }],
-[/* 3 */ 'bfile', '/lib/features.js', function(exports, module, __filename, __dirname, __meta) {
+[/* 3 */ 'bfile', '/lib/features.js', 0, function(exports, require, module, __filename, __dirname) {
 /*!
  * features.js - feature detection for bfile
  * Copyright (c) 2014-2019, Christopher Jeffrey (MIT License).
@@ -245,22 +250,39 @@ let HAS_OPTIONAL_FLAGS = version >= 0x0b0100;
 // fs.WriteStream got a `pending` property in 11.2.0.
 let HAS_WRITE_PENDING = version >= 0x0b0200;
 
-// For whenever promises are marked non-experimental.
-let HAS_STABLE_PROMISES = false;
+// Promises are considered stable as of 11.14.0.
+let HAS_STABLE_PROMISES = version >= 0x0b0e00;
 
-// The current highest modern version (11.1.0).
-// This _would_ be based on the value of HAS_WRITE_PENDING
-// instead of HAS_OPTIONAL_FLAGS, but we don't create
-// fallback for HAS_WRITE_PENDING right now.
-let HAS_ALL = HAS_OPTIONAL_FLAGS
+// Whether to actually use stable promises.
+let USE_STABLE_PROMISES = HAS_STABLE_PROMISES
+                       && process.env.BFILE_USE_STABLE === '1';
+
+// fs.writev{,Sync} was added in 12.9.0.
+let HAS_WRITEV = version >= 0x0c0900;
+let HAS_WRITEV_IMPL = typeof fs.writev === 'function';
+
+// Stats objects have nanosecond precision as of 12.10.0.
+let HAS_STAT_NANO = version >= 0x0c0a00;
+
+// fs.rmdir{,Sync} got an options parameter to allow for recursion in 12.10.0.
+let HAS_RECURSIVE_RMDIR = version >= 0x0c0a00;
+
+// fs.opendir{,Sync} are present as of 12.12.0.
+let HAS_OPENDIR = version >= 0x0c0c00;
+let HAS_OPENDIR_IMPL = typeof fs.opendir === 'function';
+
+// The current highest modern version (12.12.0).
+let HAS_ALL = HAS_OPENDIR
            && HAS_COPY_FILE_IMPL
            && HAS_REALPATH_NATIVE_IMPL
            && HAS_PROMISES_IMPL
-           && HAS_DIRENT_IMPL;
+           && HAS_DIRENT_IMPL
+           && HAS_WRITEV_IMPL
+           && HAS_OPENDIR_IMPL;
 
 // Force stable promises with an env variable.
-if (process.env.BFILE_FORCE_STABLE === '1')
-  HAS_STABLE_PROMISES = true;
+if (process.env.BFILE_FORCE_STABLE === '1' && HAS_PROMISES_IMPL)
+  USE_STABLE_PROMISES = true;
 
 // Force compat mode with an env variable.
 if (process.env.BFILE_FORCE_COMPAT === '1') {
@@ -282,6 +304,13 @@ if (process.env.BFILE_FORCE_COMPAT === '1') {
   HAS_OPTIONAL_FLAGS = false;
   HAS_WRITE_PENDING = false;
   HAS_STABLE_PROMISES = false;
+  USE_STABLE_PROMISES = false;
+  HAS_WRITEV = false;
+  HAS_WRITEV_IMPL = false;
+  HAS_STAT_NANO = false;
+  HAS_RECURSIVE_RMDIR = false;
+  HAS_OPENDIR = false;
+  HAS_OPENDIR_IMPL = false;
   HAS_ALL = false;
 }
 
@@ -308,9 +337,16 @@ exports.HAS_RECURSIVE_MKDIR = HAS_RECURSIVE_MKDIR;
 exports.HAS_OPTIONAL_FLAGS = HAS_OPTIONAL_FLAGS;
 exports.HAS_WRITE_PENDING = HAS_WRITE_PENDING;
 exports.HAS_STABLE_PROMISES = HAS_STABLE_PROMISES;
+exports.USE_STABLE_PROMISES = USE_STABLE_PROMISES;
+exports.HAS_WRITEV = HAS_WRITEV;
+exports.HAS_WRITEV_IMPL = HAS_WRITEV_IMPL;
+exports.HAS_STAT_NANO = HAS_STAT_NANO;
+exports.HAS_RECURSIVE_RMDIR = HAS_RECURSIVE_RMDIR;
+exports.HAS_OPENDIR = HAS_OPENDIR;
+exports.HAS_OPENDIR_IMPL = HAS_OPENDIR_IMPL;
 exports.HAS_ALL = HAS_ALL;
 }],
-[/* 4 */ 'bfile', '/lib/modern.js', function(exports, module, __filename, __dirname, __meta) {
+[/* 4 */ 'bfile', '/lib/modern.js', 0, function(exports, require, module, __filename, __dirname) {
 /*!
  * modern.js - modern backend for bfile
  * Copyright (c) 2014-2019, Christopher Jeffrey (MIT License).
@@ -322,13 +358,7 @@ exports.HAS_ALL = HAS_ALL;
 'use strict';
 
 const fs = require('fs');
-const {promisify} = __node_require__(5 /* './util' */);
-
-/*
- * Constants
- */
-
-let promises = null;
+const {promisify} = __node_require__(5 /* './util' */, 0);
 
 /*
  * Expose
@@ -379,6 +409,8 @@ exports.mkdtemp = promisify(fs.mkdtemp);
 exports.mkdtempSync = fs.mkdtempSync;
 exports.open = promisify(fs.open);
 exports.openSync = fs.openSync;
+exports.opendir = promisify(fs.opendir);
+exports.opendirSync = fs.opendirSync;
 exports.read = null;
 exports.readSync = fs.readSync;
 exports.readdir = promisify(fs.readdir);
@@ -411,6 +443,8 @@ exports.write = null;
 exports.writeSync = fs.writeSync;
 exports.writeFile = promisify(fs.writeFile);
 exports.writeFileSync = fs.writeFileSync;
+exports.writev = promisify(fs.writev);
+exports.writevSync = fs.writevSync;
 
 exports.exists = function exists(file) {
   return new Promise(function(resolve, reject) {
@@ -471,10 +505,10 @@ exports.write = function write(fd, buffer, offset, length, position) {
   });
 };
 
-exports.F_OK = fs.F_OK || 0;
-exports.R_OK = fs.R_OK || 0;
-exports.W_OK = fs.W_OK || 0;
-exports.X_OK = fs.X_OK || 0;
+exports.F_OK = fs.constants.F_OK || 0;
+exports.R_OK = fs.constants.R_OK || 0;
+exports.W_OK = fs.constants.W_OK || 0;
+exports.X_OK = fs.constants.X_OK || 0;
 
 exports.Dirent = fs.Dirent;
 exports.Stats = fs.Stats;
@@ -496,57 +530,28 @@ Object.defineProperties(exports, {
       fs.WriteStream = val;
     }
   },
-  FileReadStream: {
-    get() {
-      return fs.FileReadStream;
-    },
-    set(val) {
-      fs.FileReadStream = val;
-    }
-  },
-  FileWriteStream: {
-    get() {
-      return fs.FileWriteStream;
-    },
-    set(val) {
-      fs.FileWriteStream = val;
-    }
-  },
   promises: {
     configurable: true,
     enumerable: false,
     get() {
-      if (!promises) {
-        const emit = process.emitWarning;
-
-        process.emitWarning = () => {};
-
-        try {
-          promises = fs.promises;
-        } finally {
-          process.emitWarning = emit;
-        }
-      }
-
-      return promises;
+      return fs.promises;
     }
   }
 });
 }],
-[/* 5 */ 'bfile', '/lib/util.js', function(exports, module, __filename, __dirname, __meta) {
+[/* 5 */ 'bfile', '/lib/util.js', 0, function(exports, require, module, __filename, __dirname) {
 /*!
  * util.js - utils for bfile
  * Copyright (c) 2014-2019, Christopher Jeffrey (MIT License).
  * https://github.com/bcoin-org/bfile
  */
 
-/* global SharedArrayBuffer */
 /* eslint prefer-arrow-callback: "off" */
 
 'use strict';
 
 const {resolve} = require('path');
-const {ArgError} = __node_require__(6 /* './error' */);
+const {ArgError} = __node_require__(6 /* './error' */, 0);
 
 /*
  * Constants
@@ -618,8 +623,11 @@ function fromPath(path) {
   if (path instanceof Uint8Array)
     return toBuffer(path).toString('utf8');
 
+  if (!url)
+    url = require('url');
+
   if (path instanceof url.URL)
-    return fileURLToPath(path.href);
+    return fileURLToPath(path);
 
   throw new ArgError('path', path, ['string', 'Buffer', 'URL']);
 }
@@ -664,26 +672,15 @@ function fileURLToPath(uri) {
   if (url.fileURLToPath)
     return resolve(url.fileURLToPath(uri), '.');
 
-  if (typeof uri !== 'string')
-    throw new ArgError('uri', uri, 'string');
+  if (typeof uri === 'string')
+    uri = new url.URL(uri);
 
-  try {
-    uri = url.parse(uri);
-  } catch (e) {
-    const err = new TypeError(`Invalid URL: ${uri}`);
-    err.code = 'ERR_INVALID_URL';
-    throw err;
-  }
+  if (!(uri instanceof url.URL))
+    throw new ArgError('uri', uri, 'URL');
 
   if (uri.protocol !== 'file:') {
     const err = new TypeError('The URL must be of scheme file');
     err.code = 'ERR_INVALID_URL_SCHEME';
-    throw err;
-  }
-
-  if (uri.port != null) {
-    const err = new TypeError(`Invalid URL: ${uri.href}`);
-    err.code = 'ERR_INVALID_URL';
     throw err;
   }
 
@@ -780,7 +777,7 @@ exports.fromPath = fromPath;
 exports.fromPaths = fromPaths;
 exports.toBuffer = toBuffer;
 }],
-[/* 6 */ 'bfile', '/lib/error.js', function(exports, module, __filename, __dirname, __meta) {
+[/* 6 */ 'bfile', '/lib/error.js', 0, function(exports, require, module, __filename, __dirname) {
 /*!
  * error.js - errors for bfile
  * Copyright (c) 2014-2019, Christopher Jeffrey (MIT License).
@@ -793,7 +790,7 @@ exports.toBuffer = toBuffer;
  * ArgError
  */
 
-class ArgError extends TypeError {
+const ArgError = class TypeError extends global.TypeError {
   constructor(name, value, expect) {
     let msg;
 
@@ -814,30 +811,36 @@ class ArgError extends TypeError {
     super(msg);
 
     this.code = 'ERR_INVALID_ARG_TYPE';
-    this.name = `TypeError [${this.code}]`;
+    this.name = `${this.name} [${this.code}]`;
+    this.stack;
 
-    if (Error.captureStackTrace)
-      Error.captureStackTrace(this, this.constructor);
+    delete this.name;
   }
-}
+
+  toString() {
+    return `${this.name} [${this.code}]: ${this.message}`;
+  }
+};
 
 /**
  * FSError
  */
 
-class FSError extends Error {
+const FSError = class Error extends global.Error {
   constructor(desc, ...args) {
     let message, syscall, path;
 
     if (desc == null || typeof desc !== 'object')
       throw new TypeError('invalid arguments for fs error');
 
-    if (args.length === 2)
-      [message, syscall, path] = [desc.message, ...args];
-    else if (args.length === 3)
+    message = desc.message;
+
+    if (args.length === 3)
       [message, syscall, path] = args;
-    else
-      throw new TypeError('invalid arguments for fs error');
+    else if (args.length === 2)
+      [syscall, path] = args;
+    else if (args.length === 1)
+      [syscall] = args;
 
     let msg = `${desc.code}:`;
 
@@ -860,11 +863,8 @@ class FSError extends Error {
 
     if (path)
       this.path = path;
-
-    if (Error.captureStackTrace)
-      Error.captureStackTrace(this, this.constructor);
   }
-}
+};
 
 /*
  * Errors
@@ -925,7 +925,7 @@ FSError.EISDIR = {
 exports.ArgError = ArgError;
 exports.FSError = FSError;
 }],
-[/* 7 */ 'bfile', '/lib/legacy.js', function(exports, module, __filename, __dirname, __meta) {
+[/* 7 */ 'bfile', '/lib/legacy.js', 0, function(exports, require, module, __filename, __dirname) {
 /*!
  * legacy.js - legacy backend for bfile
  * Copyright (c) 2014-2019, Christopher Jeffrey (MIT License).
@@ -934,9 +934,9 @@ exports.FSError = FSError;
 
 'use strict';
 
-const compat = __node_require__(8 /* './compat' */);
-const features = __node_require__(3 /* './features' */);
-const fs = __node_require__(4 /* './modern' */);
+const compat = __node_require__(8 /* './compat' */, 0);
+const features = __node_require__(3 /* './features' */, 0);
+const fs = __node_require__(4 /* './modern' */, 0);
 
 /*
  * Helpers
@@ -957,7 +957,8 @@ const clone = () => {
  */
 
 if (!features.HAS_STAT_NUMBERS
-    || !features.HAS_STAT_BIGINTS) {
+    || !features.HAS_STAT_BIGINTS
+    || !features.HAS_STAT_NANO) {
   fs.fstat = compat.fstat;
   fs.fstatSync = compat.fstatSync;
   fs.stat = compat.stat;
@@ -1010,12 +1011,45 @@ if (!features.HAS_RECURSIVE_MKDIR) {
   fs.mkdirSync = compat.mkdirSync;
 }
 
-if (!features.HAS_OPTIONAL_FLAGS)
+if (!features.HAS_OPTIONAL_FLAGS) {
   fs.open = compat.open;
+  fs.openSync = compat.openSync;
+}
+
+if (!features.HAS_WRITEV_IMPL) {
+  fs.writev = compat.writev;
+  fs.writevSync = compat.writevSync;
+}
+
+if (!features.HAS_RECURSIVE_RMDIR) {
+  fs.rmdir = compat.rmdir;
+  fs.rmdirSync = compat.rmdirSync;
+}
+
+if (!features.HAS_OPENDIR_IMPL) {
+  fs.opendir = compat.opendir;
+  fs.opendirSync = compat.opendirSync;
+  fs.Dir = compat.Dir;
+}
 
 // A few things still need patching even if we have native promises.
-if (features.HAS_PROMISES_IMPL && !features.HAS_OPTIONAL_FLAGS) {
+if (features.HAS_PROMISES_IMPL && !features.HAS_OPENDIR_IMPL) {
   const getter = Object.getOwnPropertyDescriptor(fs, 'promises').get;
+
+  const getPromises = () => {
+    if (features.HAS_STABLE_PROMISES)
+      return getter();
+
+    const emit = process.emitWarning;
+
+    process.emitWarning = () => {};
+
+    try {
+      return getter();
+    } finally {
+      process.emitWarning = emit;
+    }
+  };
 
   let promises = null;
 
@@ -1026,7 +1060,13 @@ if (features.HAS_PROMISES_IMPL && !features.HAS_OPTIONAL_FLAGS) {
       if (promises)
         return promises;
 
-      promises = compat.clonePromises(getter());
+      promises = compat.clonePromises(getPromises());
+
+      if (!features.HAS_STAT_BIGINTS
+          || !features.HAS_STAT_NANO) {
+        promises.stat = compat.promises.stat;
+        compat.patchStat(promises);
+      }
 
       if (!features.HAS_DIRENT_IMPL)
         promises.readdir = compat.promises.readdir;
@@ -1042,6 +1082,15 @@ if (features.HAS_PROMISES_IMPL && !features.HAS_OPTIONAL_FLAGS) {
       if (!features.HAS_OPTIONAL_FLAGS)
         compat.patchOpenFlags(promises);
 
+      if (!features.HAS_WRITEV_IMPL)
+        compat.patchWritev(promises);
+
+      if (!features.HAS_RECURSIVE_RMDIR)
+        promises.rmdir = compat.promises.rmdir;
+
+      if (!features.HAS_OPENDIR_IMPL)
+        promises.opendir = compat.promises.opendir;
+
       return promises;
     }
   });
@@ -1053,21 +1102,20 @@ if (features.HAS_PROMISES_IMPL && !features.HAS_OPTIONAL_FLAGS) {
 
 module.exports = fs;
 }],
-[/* 8 */ 'bfile', '/lib/compat.js', function(exports, module, __filename, __dirname, __meta) {
+[/* 8 */ 'bfile', '/lib/compat.js', 0, function(exports, require, module, __filename, __dirname) {
 /*!
  * compat.js - compat functions for bfile
  * Copyright (c) 2014-2019, Christopher Jeffrey (MIT License).
  * https://github.com/bcoin-org/bfile
  */
 
-/* global BigInt */
-
 'use strict';
 
 const fs = require('fs');
 const path = require('path');
-const {ArgError, FSError} = __node_require__(6 /* './error' */);
-const util = __node_require__(5 /* './util' */);
+const {ArgError, FSError} = __node_require__(6 /* './error' */, 0);
+const features = __node_require__(3 /* './features' */, 0);
+const util = __node_require__(5 /* './util' */, 0);
 const {EIO, ENOTDIR} = FSError;
 
 const {
@@ -1171,27 +1219,37 @@ function copyFileSync(src, dest, flags) {
     throw new ArgError('flags', flags, 'integer');
 
   const flag = (flags & COPYFILE_EXCL) ? 'wx' : 'w';
-  const slab = Buffer.allocUnsafe(64 * 1024);
 
   let rfd = null;
   let stat = null;
   let wfd = null;
   let pos = 0;
+  let slab = null;
 
   try {
     rfd = fs.openSync(src, 'r');
     stat = fs.fstatSync(rfd);
     wfd = fs.openSync(dest, flag, stat.mode);
 
+    // Maximum size of `off_t` on linux.
+    if (stat.size > 0x7ffff000)
+      throw new FSError(EIO, 'read', fromPath(src));
+
+    slab = Buffer.allocUnsafe(Math.min(64 * 1024, stat.size));
+
     while (pos < stat.size) {
       const length = Math.min(stat.size - pos, slab.length);
-      const bytes = fs.readSync(rfd, slab, 0, length, pos);
+      const bytesRead = fs.readSync(rfd, slab, 0, length, pos);
 
-      if (bytes !== length)
+      if (bytesRead !== length)
         throw new FSError(EIO, 'read', fromPath(src));
 
-      fs.writeSync(wfd, slab, 0, length, null);
-      pos += bytes;
+      const bytesWritten = fs.writeSync(wfd, slab, 0, length, null);
+
+      if (bytesWritten !== length)
+        throw new FSError(EIO, 'write', fromPath(src));
+
+      pos += length;
     }
   } finally {
     try {
@@ -1433,6 +1491,131 @@ class Dirent {
 }
 
 /*
+ * opendir()
+ */
+
+async function opendir(path, options) {
+  if (typeof options === 'string')
+    options = { encoding: options };
+
+  const list = await readdir(path, {
+    encoding: options ? options.encoding : undefined,
+    withFileTypes: true
+  });
+
+  return new Dir(path, list);
+}
+
+function opendirSync(path, options) {
+  if (typeof options === 'string')
+    options = { encoding: options };
+
+  const list = readdirSync(path, {
+    encoding: options ? options.encoding : undefined,
+    withFileTypes: true
+  });
+
+  return new Dir(path, list);
+}
+
+/**
+ * Dir
+ */
+
+class Dir {
+  constructor(path, list) {
+    this.path = path;
+    this._list = list;
+    this._index = 0;
+  }
+
+  _error() {
+    const err = new Error('Directory handle was closed');
+
+    err.code = 'ERR_DIR_CLOSED';
+    err.name = `Error [${err.code}]`;
+
+    if (Error.captureStackTrace)
+      Error.captureStackTrace(err, this._error);
+
+    return err;
+  }
+
+  async close(callback) {
+    if (typeof callback === 'function') {
+      try {
+        this.closeSync();
+      } catch (e) {
+        callback(e);
+        return;
+      }
+      callback();
+      return;
+    }
+
+    this.closeSync();
+  }
+
+  closeSync() {
+    if (this._index === -1)
+      throw this._error();
+
+    this._index = -1;
+  }
+
+  async read(callback) {
+    if (typeof callback === 'function') {
+      let item;
+      try {
+        item = this.readSync();
+      } catch (e) {
+        callback(e);
+        return undefined;
+      }
+      callback(null, item);
+      return undefined;
+    }
+
+    return this.readSync();
+  }
+
+  readSync() {
+    if (this._index === -1)
+      throw this._error();
+
+    if (this._index === this._list.length)
+      return null;
+
+    return this._list[this._index++];
+  }
+
+  entries() {
+    return {
+      next: async () => {
+        let item;
+
+        try {
+          item = this.readSync();
+        } catch (e) {
+          item = null;
+        }
+
+        if (item === null) {
+          this._index = -1;
+          return { value: undefined, done: true };
+        }
+
+        return { value: item, done: false };
+      }
+    };
+  }
+
+  [Symbol.asyncIterator || 'asyncIterator']() {
+    return this.entries();
+  }
+}
+
+/*
  * realpath.native()
  */
 
@@ -1453,16 +1636,227 @@ realpathSync.native = function(...args) {
 };
 
 /*
+ * rmdir()
+ */
+
+async function rmdir(path, options) {
+  if (options && options.recursive) {
+    path = fromPath(path);
+
+    let {maxRetries, retryDelay} = options;
+
+    if (maxRetries == null)
+      maxRetries = 0;
+
+    if (retryDelay == null)
+      retryDelay = 100;
+
+    if ((maxRetries >>> 0) !== maxRetries)
+      throw new ArgError('maxRetries', maxRetries, 'integer');
+
+    if ((retryDelay >>> 0) !== retryDelay)
+      throw new ArgError('retryDelay', retryDelay, 'integer');
+
+    let tries = 0;
+
+    for (;;) {
+      try {
+        await _rmdir(path);
+      } catch (e) {
+        const retry = e.code === 'EBUSY'
+                   || e.code === 'ENOTEMPTY'
+                   || e.code === 'EPERM'
+                   || e.code === 'EMFILE'
+                   || e.code === 'ENFILE';
+
+        if (retry && tries < maxRetries) {
+          tries += 1;
+          await wait(tries * retryDelay);
+          continue;
+        }
+
+        throw e;
+      }
+
+      break;
+    }
+
+    return undefined;
+  }
+
+  return call(fs.rmdir, [path]);
+}
+
+async function _rmdir(path) {
+  let stat = null;
+
+  try {
+    stat = await safeStat(path);
+  } catch (e) {
+    if (e.code === 'ENOENT')
+      return;
+    throw e;
+  }
+
+  if (stat.isDirectory()) {
+    let list = null;
+
+    try {
+      list = await call(fs.readdir, [path]);
+    } catch (e) {
+      if (e.code === 'ENOENT')
+        return;
+      throw e;
+    }
+
+    for (const name of list)
+      await _rmdir(join(path, name));
+
+    try {
+      await call(fs.rmdir, [path]);
+    } catch (e) {
+      if (e.code === 'ENOENT')
+        return;
+      throw e;
+    }
+
+    return;
+  }
+
+  try {
+    await call(fs.unlink, [path]);
+  } catch (e) {
+    if (e.code === 'ENOENT')
+      return;
+    throw e;
+  }
+}
+
+function rmdirSync(path, options) {
+  if (options && options.recursive) {
+    path = fromPath(path);
+
+    let {maxRetries} = options;
+
+    if (maxRetries == null)
+      maxRetries = 0;
+
+    if ((maxRetries >>> 0) !== maxRetries)
+      throw new ArgError('maxRetries', maxRetries, 'integer');
+
+    let tries = 0;
+
+    for (;;) {
+      try {
+        _rmdirSync(path, maxRetries);
+      } catch (e) {
+        const retry = e.code === 'EBUSY'
+                   || e.code === 'ENOTEMPTY'
+                   || e.code === 'EPERM'
+                   || e.code === 'EMFILE'
+                   || e.code === 'ENFILE';
+
+        if (retry && tries < maxRetries) {
+          tries += 1;
+          continue;
+        }
+
+        throw e;
+      }
+
+      break;
+    }
+
+    return;
+  }
+
+  fs.rmdirSync(path);
+}
+
+function _rmdirSync(path, maxRetries) {
+  let stat = null;
+
+  try {
+    stat = safeStatSync(path);
+  } catch (e) {
+    if (e.code === 'ENOENT')
+      return;
+    throw e;
+  }
+
+  if (stat.isDirectory()) {
+    let list = null;
+
+    try {
+      list = fs.readdirSync(path);
+    } catch (e) {
+      if (e.code === 'ENOENT')
+        return;
+      throw e;
+    }
+
+    for (const name of list)
+      _rmdirSync(join(path, name), maxRetries);
+
+    let tries = 0;
+
+    for (;;) {
+      try {
+        fs.rmdirSync(path);
+      } catch (e) {
+        if (e.code === 'ENOENT')
+          return;
+
+        if (e.code === 'ENOTEMPTY' && process.platform === 'win32') {
+          if (tries < maxRetries + 1) {
+            tries += 1;
+            continue;
+          }
+        }
+
+        throw e;
+      }
+
+      break;
+    }
+
+    return;
+  }
+
+  try {
+    fs.unlinkSync(path);
+  } catch (e) {
+    if (e.code === 'ENOENT')
+      return;
+    throw e;
+  }
+}
+
+/*
  * stat()
  */
 
 function wrapStat(statter) {
+  if (features.HAS_STAT_BIGINTS) {
+    return async function stat(file, options) {
+      if (options == null)
+        options = {};
+      return convertStat(await call(statter, [file, options]), options);
+    };
+  }
   return async function stat(file, options) {
     return convertStat(await call(statter, [file]), options);
   };
 }
 
 function wrapStatSync(statter) {
+  if (features.HAS_STAT_BIGINTS) {
+    return function statSync(file, options) {
+      if (options == null)
+        options = {};
+      return convertStat(statter(file, options), options);
+    };
+  }
   return function statSync(file, options) {
     return convertStat(statter(file), options);
   };
@@ -1481,7 +1875,7 @@ function convertStat(stats, options) {
   // eslint-disable-next-line
   if (bigint && typeof stats.atimeMs !== 'bigint') {
     if (typeof BigInt !== 'function')
-      throw new Error('Bigint is not supported.');
+      throw new Error('BigInt is not supported.');
 
     stats.dev = BigInt(stats.dev);
     stats.ino = BigInt(stats.ino);
@@ -1497,6 +1891,16 @@ function convertStat(stats, options) {
     stats.mtimeMs = BigInt(Math.floor(stats.mtimeMs));
     stats.ctimeMs = BigInt(Math.floor(stats.ctimeMs));
     stats.birthtimeMs = BigInt(Math.floor(stats.birthtimeMs));
+  }
+
+  if (bigint && stats.atimeNs == null) {
+    if (typeof BigInt !== 'function')
+      throw new Error('BigInt is not supported.');
+
+    stats.atimeNs = stats.atimeMs * BigInt(1000000);
+    stats.mtimeNs = stats.mtimeMs * BigInt(1000000);
+    stats.ctimeNs = stats.ctimeMs * BigInt(1000000);
+    stats.birthtimeNs = stats.birthtimeMs * BigInt(1000000);
   }
 
   return stats;
@@ -1543,6 +1947,54 @@ function writeFileSync(...args) {
     args[1] = toBuffer(args[1]);
 
   return fs.writeFileSync(...args);
+}
+
+/*
+ * writev()
+ */
+
+async function writev(fd, buffers, position) {
+  if (!Array.isArray(buffers))
+    throw new ArgError('buffers', buffers, 'ArrayBufferView[]');
+
+  let written = 0;
+
+  for (const array of buffers) {
+    const buf = toBuffer(array);
+    const bytes = await call(fs.write, [fd, buf, 0, buf.length, position]);
+
+    if (bytes !== buf.length)
+      throw new FSError(EIO, 'writev');
+
+    if (typeof position === 'number')
+      position += bytes;
+
+    written += bytes;
+  }
+
+  return written;
+}
+
+function writevSync(fd, buffers, position) {
+  if (!Array.isArray(buffers))
+    throw new ArgError('buffers', buffers, 'ArrayBufferView[]');
+
+  let written = 0;
+
+  for (const array of buffers) {
+    const buf = toBuffer(array);
+    const bytes = fs.writeSync(fd, buf, 0, buf.length, position);
+
+    if (bytes !== buf.length)
+      throw new FSError(EIO, 'writev');
+
+    if (typeof position === 'number')
+      position += bytes;
+
+    written += bytes;
+  }
+
+  return written;
 }
 
 /**
@@ -1619,6 +2071,13 @@ class FileHandle {
   writeFile(...args) {
     return writeFile(this._fd, ...args);
   }
+
+  async writev(...args) {
+    return {
+      bytesWritten: await writev(this._fd, ...args),
+      buffers: args[0]
+    };
+  }
 }
 
 /*
@@ -1641,12 +2100,13 @@ const promises = {
   open: async function _open(...args) {
     return new FileHandle(await open(...args));
   },
+  opendir,
   readdir,
   readFile: promisify(fs.readFile),
   readlink: promisify(fs.readlink),
   realpath,
   rename: promisify(fs.rename),
-  rmdir: promisify(fs.rmdir),
+  rmdir,
   stat,
   symlink: promisify(fs.symlink),
   truncate: promisify(fs.truncate),
@@ -1673,6 +2133,7 @@ function clonePromises(promises) {
     mkdir: promises.mkdir,
     mkdtemp: promises.mkdtemp,
     open: promises.open,
+    opendir: promises.opendir,
     readdir: promises.readdir,
     readFile: promises.readFile,
     readlink: promises.readlink,
@@ -1688,7 +2149,8 @@ function clonePromises(promises) {
   };
 }
 
-function patchTypedArray(promises) {
+function patchHandle(name, promises, callback) {
+  const key = `__patch_${name}`;
   const {open} = promises;
 
   // Insanity? Maybe.
@@ -1698,33 +2160,10 @@ function patchTypedArray(promises) {
   // a new class in order to patch it.
   let inject = (handle) => {
     const FileHandle = handle.constructor;
-    const proto = FileHandle.prototype;
-    const {read, write, writeFile} = proto;
 
-    if (!FileHandle.__hasPatch) {
-      // eslint-disable-next-line
-      proto.read = function _read(...args) {
-        args[0] = toBuffer(args[0]);
-        return read.call(this, ...args);
-      };
-
-      // eslint-disable-next-line
-      proto.write = function _write(...args) {
-        if (typeof args[0] !== 'string')
-          args[0] = toBuffer(args[0]);
-
-        return write.call(this, ...args);
-      };
-
-      // eslint-disable-next-line
-      proto.writeFile = function _writeFile(...args) {
-        if (typeof args[0] !== 'string')
-          args[0] = toBuffer(args[0]);
-
-        return writeFile.call(this, ...args);
-      };
-
-      FileHandle.__hasPatch = true;
+    if (!FileHandle[key]) {
+      callback(FileHandle.prototype);
+      FileHandle[key] = true;
     }
 
     inject = x => x;
@@ -1738,6 +2177,45 @@ function patchTypedArray(promises) {
   };
 }
 
+function patchStat(promises) {
+  patchHandle('stat', promises, (proto) => {
+    const {stat} = proto;
+
+    // eslint-disable-next-line
+    proto.stat = async function _stat(options) {
+      return convertStat(await stat.call(this, options), options);
+    };
+  });
+}
+
+function patchTypedArray(promises) {
+  patchHandle('typedArray', promises, (proto) => {
+    const {read, write, writeFile} = proto;
+
+    // eslint-disable-next-line
+    proto.read = function _read(...args) {
+      args[0] = toBuffer(args[0]);
+      return read.call(this, ...args);
+    };
+
+    // eslint-disable-next-line
+    proto.write = function _write(...args) {
+      if (typeof args[0] !== 'string')
+        args[0] = toBuffer(args[0]);
+
+      return write.call(this, ...args);
+    };
+
+    // eslint-disable-next-line
+    proto.writeFile = function _writeFile(...args) {
+      if (typeof args[0] !== 'string')
+        args[0] = toBuffer(args[0]);
+
+      return writeFile.call(this, ...args);
+    };
+  });
+}
+
 function patchOpenFlags(promises) {
   const {open} = promises;
 
@@ -1747,6 +2225,75 @@ function patchOpenFlags(promises) {
       args[1] = 'r';
     return open(...args);
   };
+}
+
+function patchWritev(promises) {
+  patchHandle('writev', promises, (proto) => {
+    proto.writev = async function writev(buffers, position) {
+      if (!Array.isArray(buffers))
+        throw new ArgError('buffers', buffers, 'ArrayBufferView[]');
+
+      let written = 0;
+
+      for (const array of buffers) {
+        const buf = toBuffer(array);
+        const {bytesWritten} = await this.write(buf, 0, buf.length, position);
+
+        if (bytesWritten !== buf.length)
+          throw new FSError(EIO, 'writev');
+
+        if (typeof position === 'number')
+          position += bytesWritten;
+
+        written += bytesWritten;
+      }
+
+      return {
+        bytesWritten: written,
+        buffers
+      };
+    };
+  });
+}
+
+/*
+ * Helpers
+ */
+
+function wait(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
+
+async function safeStat(path) {
+  try {
+    return await call(fs.lstat, [path]);
+  } catch (e) {
+    if (e.code === 'EPERM' && process.platform === 'win32') {
+      try {
+        await call(fs.chmod, [path, 0o666]);
+      } catch (e) {
+        ;
+      }
+      return call(fs.lstat, [path]);
+    }
+    throw e;
+  }
+}
+
+function safeStatSync(path) {
+  try {
+    return fs.lstatSync(path);
+  } catch (e) {
+    if (e.code === 'EPERM' && process.platform === 'win32') {
+      try {
+        fs.chmodSync(path, 0o666);
+      } catch (e) {
+        ;
+      }
+      return fs.lstatSync(path);
+    }
+    throw e;
+  }
 }
 
 /*
@@ -1767,8 +2314,13 @@ exports.readSync = readSync;
 exports.readdir = readdir;
 exports.readdirSync = readdirSync;
 exports.Dirent = Dirent;
+exports.opendir = opendir;
+exports.opendirSync = opendirSync;
+exports.Dir = Dir;
 exports.realpath = realpath;
 exports.realpathSync = realpathSync;
+exports.rmdir = rmdir;
+exports.rmdirSync = rmdirSync;
 exports.fstat = fstat;
 exports.fstatSync = fstatSync;
 exports.stat = stat;
@@ -1779,12 +2331,16 @@ exports.write = write;
 exports.writeSync = writeSync;
 exports.writeFile = writeFile;
 exports.writeFileSync = writeFileSync;
+exports.writev = writev;
+exports.writevSync = writevSync;
 exports.promises = promises;
 exports.clonePromises = clonePromises;
+exports.patchStat = patchStat;
 exports.patchTypedArray = patchTypedArray;
 exports.patchOpenFlags = patchOpenFlags;
+exports.patchWritev = patchWritev;
 }],
-[/* 9 */ 'bfile', '/lib/extra.js', function(exports, module, __filename, __dirname, __meta) {
+[/* 9 */ 'bfile', '/lib/extra.js', 0, function(exports, require, module, __filename, __dirname) {
 /*!
  * extra.js - extra functions for bfile
  * Copyright (c) 2014-2019, Christopher Jeffrey (MIT License).
@@ -1794,9 +2350,9 @@ exports.patchOpenFlags = patchOpenFlags;
 'use strict';
 
 const path = require('path');
-const error = __node_require__(6 /* './error' */);
-const fs = __node_require__(2 /* './backend' */);
-const util = __node_require__(5 /* './util' */);
+const error = __node_require__(6 /* './error' */, 0);
+const fs = __node_require__(2 /* './backend' */, 0);
+const util = __node_require__(5 /* './util' */, 0);
 const {dirname, join, resolve} = path;
 const {ArgError, FSError} = error;
 const {fromPath, fromPaths} = util;
@@ -1846,7 +2402,7 @@ async function _copy(src, dest, options, seen, depth) {
       try {
         real = await fs.realpath(real);
       } catch (e) {
-        if (!isNoEntry(e))
+        if (!isIgnorable(e))
           throw e;
       }
 
@@ -1955,7 +2511,7 @@ function _copySync(src, dest, options, seen, depth) {
       try {
         real = fs.realpathSync(real);
       } catch (e) {
-        if (!isNoEntry(e))
+        if (!isIgnorable(e))
           throw e;
       }
 
@@ -2032,6 +2588,44 @@ function _copySync(src, dest, options, seen, depth) {
   return ret + 1;
 }
 
+async function empty(path, mode) {
+  const dir = fromPath(path);
+
+  let list = null;
+
+  try {
+    list = await fs.readdir(dir);
+  } catch (e) {
+    if (e.code === 'ENOENT')
+      return mkdirp(dir, mode);
+    throw e;
+  }
+
+  for (const name of list)
+    await remove(join(dir, name));
+
+  return undefined;
+}
+
+function emptySync(path, mode) {
+  const dir = fromPath(path);
+
+  let list = null;
+
+  try {
+    list = fs.readdirSync(dir);
+  } catch (e) {
+    if (e.code === 'ENOENT')
+      return mkdirpSync(dir, mode);
+    throw e;
+  }
+
+  for (const name of list)
+    removeSync(join(dir, name));
+
+  return undefined;
+}
+
 async function exists(file, mode) {
   if (mode == null)
     mode = fs.constants.F_OK;
@@ -2040,7 +2634,7 @@ async function exists(file, mode) {
     await fs.access(file, mode);
     return true;
   } catch (e) {
-    if (isNoEntry(e))
+    if (isIgnorable(e))
       return false;
     throw e;
   }
@@ -2054,7 +2648,7 @@ function existsSync(file, mode) {
     fs.accessSync(file, mode);
     return true;
   } catch (e) {
-    if (isNoEntry(e))
+    if (isIgnorable(e))
       return false;
     throw e;
   }
@@ -2064,7 +2658,7 @@ async function lstatTry(...args) {
   try {
     return await fs.lstat(...args);
   } catch (e) {
-    if (isNoEntry(e))
+    if (isIgnorable(e))
       return null;
     throw e;
   }
@@ -2074,7 +2668,7 @@ function lstatTrySync(...args) {
   try {
     return fs.lstatSync(...args);
   } catch (e) {
-    if (isNoEntry(e))
+    if (isIgnorable(e))
       return null;
     throw e;
   }
@@ -2121,28 +2715,40 @@ function moveSync(src, dest) {
 }
 
 async function outputFile(path, data, options) {
+  if (options == null)
+    options = {};
+
+  if (typeof options === 'string')
+    options = { encoding: options };
+
   const file = fromPath(path);
   const dir = dirname(file);
 
-  let mode = null;
+  let mode = options.mode;
 
-  if (options && typeof options === 'object')
-    mode = options.mode;
+  if ((mode & 0o777) === mode)
+    mode |= (mode & 0o444) >>> 2;
 
-  await fs.mkdirp(dir, mode);
+  await mkdirp(dir, mode);
   await fs.writeFile(file, data, options);
 }
 
 function outputFileSync(path, data, options) {
+  if (options == null)
+    options = {};
+
+  if (typeof options === 'string')
+    options = { encoding: options };
+
   const file = fromPath(path);
   const dir = dirname(file);
 
-  let mode = null;
+  let mode = options.mode;
 
-  if (options && typeof options === 'object')
-    mode = options.mode;
+  if ((mode & 0o777) === mode)
+    mode |= (mode & 0o444) >>> 2;
 
-  fs.mkdirpSync(dir, mode);
+  mkdirpSync(dir, mode);
   fs.writeFileSync(file, data, options);
 }
 
@@ -2165,9 +2771,37 @@ async function remove(paths, options) {
   options = removeOptions(options);
 
   let ret = 0;
+  let error = null;
 
-  for (const path of paths)
-    ret += await _remove(path, options, 0);
+  for (const path of paths) {
+    let tries = 0;
+
+    for (;;) {
+      try {
+        ret += await _remove(path, options, 0);
+      } catch (e) {
+        const retry = e.code === 'EBUSY'
+                   || e.code === 'ENOTEMPTY'
+                   || e.code === 'EPERM'
+                   || e.code === 'EMFILE'
+                   || e.code === 'ENFILE';
+
+        if (retry && tries < options.maxRetries) {
+          tries += 1;
+          await wait(tries * options.retryDelay);
+          continue;
+        }
+
+        if (!error)
+          error = e;
+      }
+
+      break;
+    }
+  }
+
+  if (error)
+    throw error;
 
   return ret;
 }
@@ -2177,10 +2811,10 @@ async function _remove(path, options, depth) {
   let stat = null;
 
   try {
-    stat = await fs.lstat(path);
+    stat = await safeStat(path);
   } catch (e) {
-    if (isNoEntry(e))
-      return ret + 1;
+    if (e.code === 'ENOENT')
+      return ret;
     throw e;
   }
 
@@ -2195,20 +2829,22 @@ async function _remove(path, options, depth) {
     try {
       list = await fs.readdir(path);
     } catch (e) {
-      if (isNoEntry(e))
-        return ret + 1;
+      if (e.code === 'ENOENT')
+        return ret;
       throw e;
     }
 
     for (const name of list)
       ret += await _remove(join(path, name), options, depth + 1);
 
-    try {
-      await fs.rmdir(path);
-    } catch (e) {
-      if (isNoEntry(e) || e.code === 'ENOTEMPTY')
-        return ret + 1;
-      throw e;
+    if (ret === 0) {
+      try {
+        await fs.rmdir(path);
+      } catch (e) {
+        if (e.code === 'ENOENT')
+          return ret;
+        throw e;
+      }
     }
 
     return ret;
@@ -2217,8 +2853,8 @@ async function _remove(path, options, depth) {
   try {
     await fs.unlink(path);
   } catch (e) {
-    if (isNoEntry(e))
-      return ret + 1;
+    if (e.code === 'ENOENT')
+      return ret;
     throw e;
   }
 
@@ -2230,9 +2866,36 @@ function removeSync(paths, options) {
   options = removeOptions(options);
 
   let ret = 0;
+  let error = null;
 
-  for (const path of paths)
-    ret += _removeSync(path, options, 0);
+  for (const path of paths) {
+    let tries = 0;
+
+    for (;;) {
+      try {
+        ret += _removeSync(path, options, 0);
+      } catch (e) {
+        const retry = e.code === 'EBUSY'
+                   || e.code === 'ENOTEMPTY'
+                   || e.code === 'EPERM'
+                   || e.code === 'EMFILE'
+                   || e.code === 'ENFILE';
+
+        if (retry && tries < options.maxRetries) {
+          tries += 1;
+          continue;
+        }
+
+        if (!error)
+          error = e;
+      }
+
+      break;
+    }
+  }
+
+  if (error)
+    throw error;
 
   return ret;
 }
@@ -2242,10 +2905,10 @@ function _removeSync(path, options, depth) {
   let stat = null;
 
   try {
-    stat = fs.lstatSync(path);
+    stat = safeStatSync(path);
   } catch (e) {
-    if (isNoEntry(e))
-      return ret + 1;
+    if (e.code === 'ENOENT')
+      return ret;
     throw e;
   }
 
@@ -2260,20 +2923,36 @@ function _removeSync(path, options, depth) {
     try {
       list = fs.readdirSync(path);
     } catch (e) {
-      if (isNoEntry(e))
-        return ret + 1;
+      if (e.code === 'ENOENT')
+        return ret;
       throw e;
     }
 
     for (const name of list)
       ret += _removeSync(join(path, name), options, depth + 1);
 
-    try {
-      fs.rmdirSync(path);
-    } catch (e) {
-      if (isNoEntry(e) || e.code === 'ENOTEMPTY')
-        return ret + 1;
-      throw e;
+    if (ret === 0) {
+      let tries = 0;
+
+      for (;;) {
+        try {
+          fs.rmdirSync(path);
+        } catch (e) {
+          if (e.code === 'ENOENT')
+            return ret;
+
+          if (e.code === 'ENOTEMPTY' && process.platform === 'win32') {
+            if (tries < options.maxRetries + 1) {
+              tries += 1;
+              continue;
+            }
+          }
+
+          throw e;
+        }
+
+        break;
+      }
     }
 
     return ret;
@@ -2282,8 +2961,8 @@ function _removeSync(path, options, depth) {
   try {
     fs.unlinkSync(path);
   } catch (e) {
-    if (isNoEntry(e))
-      return ret + 1;
+    if (e.code === 'ENOENT')
+      return ret;
     throw e;
   }
 
@@ -2294,7 +2973,7 @@ async function statTry(...args) {
   try {
     return await fs.stat(...args);
   } catch (e) {
-    if (isNoEntry(e))
+    if (isIgnorable(e))
       return null;
     throw e;
   }
@@ -2304,7 +2983,7 @@ function statTrySync(...args) {
   try {
     return fs.statSync(...args);
   } catch (e) {
-    if (isNoEntry(e))
+    if (isIgnorable(e))
       return null;
     throw e;
   }
@@ -2317,7 +2996,7 @@ async function stats(file, options) {
     try {
       return await fs.stat(file, options.stat);
     } catch (e) {
-      if (!isNoEntry(e))
+      if (!isIgnorable(e))
         throw e;
     }
   }
@@ -2332,7 +3011,7 @@ function statsSync(file, options) {
     try {
       return fs.statSync(file, options.stat);
     } catch (e) {
-      if (!isNoEntry(e))
+      if (!isIgnorable(e))
         throw e;
     }
   }
@@ -2344,7 +3023,7 @@ async function statsTry(file, options) {
   try {
     return await stats(file, options);
   } catch (e) {
-    if (isNoEntry(e))
+    if (isIgnorable(e))
       return null;
     throw e;
   }
@@ -2354,7 +3033,7 @@ function statsTrySync(file, options) {
   try {
     return statsSync(file, options);
   } catch (e) {
-    if (isNoEntry(e))
+    if (isIgnorable(e))
       return null;
     throw e;
   }
@@ -2488,7 +3167,7 @@ class AsyncWalker {
       try {
         real = await fs.realpath(real);
       } catch (e) {
-        if (!isNoEntry(e))
+        if (!isIgnorable(e))
           throw e;
       }
 
@@ -2503,15 +3182,15 @@ class AsyncWalker {
     try {
       list = await fs.readdir(path);
     } catch (e) {
-      if (isNoEntry(e))
+      if (isIgnorable(e))
         return;
       throw e;
     }
 
-    const items = [];
+    const items = new Array(list.length);
 
-    for (let i = list.length - 1; i >= 0; i--)
-      items.push(join(path, list[i]));
+    for (let i = 0; i < list.length; i++)
+      items[i] = join(path, list[list.length - 1 - i]);
 
     this.push(items);
   }
@@ -2569,7 +3248,7 @@ function* syncWalker(path, options) {
       try {
         real = fs.realpathSync(real);
       } catch (e) {
-        if (!isNoEntry(e))
+        if (!isIgnorable(e))
           throw e;
       }
 
@@ -2584,7 +3263,7 @@ function* syncWalker(path, options) {
     try {
       list = fs.readdirSync(path);
     } catch (e) {
-      if (isNoEntry(e))
+      if (isIgnorable(e))
         return;
       throw e;
     }
@@ -2695,7 +3374,7 @@ function readJSONOptions(options) {
 
 function removeOptions(options) {
   if (options == null)
-    return { filter: null };
+    options = {};
 
   if (typeof options === 'function')
     options = { filter: options };
@@ -2706,15 +3385,27 @@ function removeOptions(options) {
                                             'object']);
   }
 
-  let {filter} = options;
+  let {filter, maxRetries, retryDelay} = options;
 
   if (filter == null)
     filter = null;
 
+  if (maxRetries == null)
+    maxRetries = 3;
+
+  if (retryDelay == null)
+    retryDelay = 100;
+
   if (filter != null && typeof filter !== 'function')
     throw new ArgError('filter', filter, 'function');
 
-  return { filter };
+  if ((maxRetries >>> 0) !== maxRetries)
+    throw new ArgError('maxRetries', maxRetries, 'integer');
+
+  if ((retryDelay >>> 0) !== retryDelay)
+    throw new ArgError('retryDelay', retryDelay, 'integer');
+
+  return { filter, maxRetries, retryDelay };
 }
 
 function statsOptions(options) {
@@ -2892,14 +3583,47 @@ function writeJSONOptions(options) {
  * Helpers
  */
 
-function isNoEntry(err) {
-  if (!err)
-    return false;
-
+function isIgnorable(err) {
   return err.code === 'ENOENT'
       || err.code === 'EACCES'
       || err.code === 'EPERM'
       || err.code === 'ELOOP';
+}
+
+function wait(ms) {
+  return new Promise(r => setTimeout(r, ms));
+}
+
+async function safeStat(path) {
+  try {
+    return await fs.lstat(path);
+  } catch (e) {
+    if (e.code === 'EPERM' && process.platform === 'win32') {
+      try {
+        await fs.chmod(path, 0o666);
+      } catch (e) {
+        ;
+      }
+      return fs.lstat(path);
+    }
+    throw e;
+  }
+}
+
+function safeStatSync(path) {
+  try {
+    return fs.lstatSync(path);
+  } catch (e) {
+    if (e.code === 'EPERM' && process.platform === 'win32') {
+      try {
+        fs.chmodSync(path, 0o666);
+      } catch (e) {
+        ;
+      }
+      return fs.lstatSync(path);
+    }
+    throw e;
+  }
 }
 
 function shouldShow(options, dir) {
@@ -2953,6 +3677,8 @@ function prepareOptions(options) {
 
 exports.copy = copy;
 exports.copySync = copySync;
+exports.empty = empty;
+exports.emptySync = emptySync;
 exports.exists = exists;
 exports.existsSync = existsSync;
 exports.lstatTry = lstatTry;
@@ -2985,16 +3711,21 @@ exports.writeJSONSync = writeJSONSync;
 
 var __node_cache__ = [];
 
-function __node_error__(location) {
-  var err = new Error('Cannot find module \'' + location + '\'');
+function __node_error__(specifier) {
+  var err = new Error('Cannot find module \'' + specifier + '\'');
   err.code = 'MODULE_NOT_FOUND';
-  throw err;
+  return err;
 }
 
-function __node_require__(id) {
-  if ((id >>> 0) !== id || id > __node_modules__.length)
-    return __node_error__(id);
+function __node_throw__(specifier) {
+  throw __node_error__(specifier);
+}
 
+function __node_reject__(specifier) {
+  return Promise.reject(__node_error__(specifier));
+}
+
+function __node_require__(id, flag) {
   while (__node_cache__.length <= id)
     __node_cache__.push(null);
 
@@ -3004,32 +3735,41 @@ function __node_require__(id) {
     return cache.exports;
 
   var mod = __node_modules__[id];
-  var name = mod[0];
-  var path = mod[1];
-  var func = mod[2];
+  var esm = mod[2];
+  var func = mod[3];
   var meta;
 
   var _exports = exports;
   var _module = module;
 
   if (id !== 0) {
-    _exports = {};
+    _exports = esm ? { __proto__: null } : {};
     _module = {
-      id: '/' + name + path,
+      id: __filename,
+      path: __dirname,
       exports: _exports,
       parent: module,
-      filename: module.filename,
+      filename: __filename,
+      isPreloading: false,
       loaded: false,
       children: module.children,
-      paths: module.paths
+      paths: module.paths,
+      require: require
     };
+  } else if (esm) {
+    _exports = { __proto__: null };
+    _module.exports = _exports;
   }
 
   __node_cache__[id] = _module;
 
   try {
-    func.call(_exports, _exports, _module,
-              __filename, __dirname, meta);
+    if (esm) {
+      func.call(void 0, _exports, meta, _module);
+    } else {
+      func.call(_exports, _exports, require,
+                _module, __filename, __dirname);
+    }
   } catch (e) {
     __node_cache__[id] = null;
     throw e;
@@ -3043,4 +3783,4 @@ function __node_require__(id) {
   return _module.exports;
 }
 
-__node_require__(0);
+__node_require__(0, 0);

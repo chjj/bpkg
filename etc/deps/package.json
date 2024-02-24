@@ -28,6 +28,7 @@
     "bfile": "latest",
     "minimatch": "latest",
     "tar": "latest",
+    "terser": "latest",
     "uglify-js": "latest"
   }
 }

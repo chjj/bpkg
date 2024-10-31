@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "main": "./index.js",
   "dependencies": {
-    "acorn": "8.11.3",
-    "acorn-walk": "8.3.2"
+    "acorn": "8.14.0",
+    "acorn-walk": "8.3.4"
   }
 }

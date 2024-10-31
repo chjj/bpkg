@@ -3,9 +3,7 @@
 const acorn = require('acorn');
 const walk = require('acorn-walk');
 
-const Parser = acorn.Parser.extend(
-  require('./acorn-import-attributes')
-);
+const Parser = acorn.Parser.extend();
 
 acorn.parse = Parser.parse.bind(Parser);
 acorn.parseExpressionAt = Parser.parseExpressionAt.bind(Parser);

@@ -57,6 +57,8 @@ const HELP = `
     --entry-type <type>      main module entry type ("commonjs" or "module")
     --wasm-modules           experimental wasm modules
     --detect-module          experimental module detection
+    --default-type <type>    experimental default type
+    --strip-types            experimental type stripping
     -h, --help               output usage information
 `;
 
@@ -135,6 +137,8 @@ async function parseArgs() {
     entryType: null,
     wasmModules: false,
     detectModule: false,
+    defaultType: null,
+    stripTypes: false,
     verbose: false
   };
 
@@ -484,6 +488,25 @@ async function parseArgs() {
 
       case '--detect-module': {
         options.detectModule = true;
+        break;
+      }
+
+      case '--default-type': {
+        if (!next || next[0] === '-')
+          throw new Error(`Invalid option for: ${arg}.`);
+
+        if (next !== 'commonjs' && next !== 'module')
+          throw new Error('--entry-type must be "commonjs" or "module".');
+
+        options.defaultType = next;
+
+        i += 1;
+
+        break;
+      }
+
+      case '--strip-types': {
+        options.stripTypes = true;
         break;
       }
 

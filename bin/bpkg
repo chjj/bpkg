@@ -56,10 +56,11 @@ const HELP = `
     --conditions <a,b,..>    user conditionals
     --entry-type <type>      main module entry type ("commonjs" or "module")
     --wasm-modules           experimental wasm modules
-    --detect-module          experimental module detection
+    --detect-module          enable experimental module detection
     --no-detect-module       disable experimental module detection
     --default-type <type>    experimental default type
     --strip-types            experimental type stripping
+    --transform-types        experimental type transformations
     -h, --help               output usage information
 `;
 
@@ -140,6 +141,7 @@ async function parseArgs() {
     detectModule: true,
     defaultType: null,
     stripTypes: false,
+    transformTypes: false,
     verbose: false
   };
 
@@ -513,6 +515,11 @@ async function parseArgs() {
 
       case '--strip-types': {
         options.stripTypes = true;
+        break;
+      }
+
+      case '--transform-types': {
+        options.transformTypes = true;
         break;
       }
 

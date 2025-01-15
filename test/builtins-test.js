@@ -11,6 +11,7 @@ describe('Builtins', () => {
   it('should have global', () => {
     assert(globalThis === window);
     assert(global === window);
+    // eslint-disable-next-line
     assert(undefined === void 0);
   });
 

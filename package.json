@@ -18,6 +18,9 @@
   "bin": {
     "bpkg": "./bin/bpkg"
   },
+  "devDependencies": {
+    "bslint-extra": "~0.0.2"
+  },
   "scripts": {
     "lint": "eslint bin/* etc/vendor lib/*.js lib/analyze lib/plugins lib/templates test/ || exit 0",
     "test": "bmocha --reporter spec test/*-test.js"
